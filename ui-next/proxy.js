@@ -4,11 +4,20 @@
 import { NextResponse } from "next/server";
 
 export const config = {
-  // Protect everything except Next's static assets.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Protect everything except Next's static assets and the third-party API (own API-key auth).
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/v1).*)"],
 };
 
+// API cho bên thứ ba: KHÔNG gác bằng Basic Auth của UI. Khách cầm API key riêng (thu hồi được từng
+// cái, xem lib/publicApi.js), không được biết mật khẩu UI. Kiểm cả trong hàm chứ không chỉ dựa vào
+// matcher ở trên: khi app chạy dưới basePath (/ai) thì đường dẫn tới middleware có thể còn tiền tố.
+function isPublicApi(pathname) {
+  return pathname === "/api/v1" || pathname.startsWith("/api/v1/") || pathname.includes("/api/v1/");
+}
+
 export function proxy(req) {
+  if (isPublicApi(req.nextUrl.pathname)) return NextResponse.next();
+
   const expected = process.env.UI_BASIC_AUTH || "";
   if (!expected) return NextResponse.next();
 

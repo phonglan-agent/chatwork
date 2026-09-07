@@ -92,11 +92,14 @@ app/
     evidence/route.js     # SSE evidence (đọc-ghi sheet SQA + rclone Drive, multi-turn resume)
     kloc/route.js         # SSE KLOC (gh đọc PR → ghi tab KLoC-MVP2, multi-turn resume)
     sprint/route.js       # POST xlsx → JSON giờ âm (dùng lib/sprint.js)
+    v1/generate/route.js  # API CHO BÊN THỨ BA: POST/GET prompt → text (hộp kín, API key riêng,
+                          #   hạn mức/phút-ngày, tuỳ chọn stream SSE) — xem §API cho bên thứ ba
     sessions/route.js     # list/đọc/xoá phiên Claude CLI (.jsonl) theo project + console
     snapshot/[name]/route.js # serve runtime asset (ảnh snapshot web) — Next16 không serve public/ sau build
     cancel/route.js       # POST hủy job đang chạy
     healthz/route.js      # health check
-proxy.js                # HTTP Basic Auth (UI_BASIC_AUTH) — Next "proxy" convention
+proxy.js                # HTTP Basic Auth (UI_BASIC_AUTH) — Next "proxy" convention; /api/v1 được
+                        #   miễn (nó tự gác bằng API key riêng)
 instrumentation.js      # boot hook; chỉ start bot in-process khi TELEGRAM_IN_PROCESS=1 (mặc định: không)
 telegram-bot.mjs        # entry của pm2 app `ai-agent-telegram` — bot chạy tiến trình riêng
 scripts/pm2-restart.sh  # restart pm2 an toàn từ bên trong chính app (setsid + bậc thang tự chữa)
@@ -134,6 +137,8 @@ lib/
   limits.js             # live rate-limit /usage (Anthropic OAuth) + quota theo từng account
   usage.js              # buildUsageReport() — offline ~/.claude/projects parse
   jobs.js               # running Map (job-lock) + cancel
+  publicApi.js          # API bên thứ ba: xác thực API key, hạn mức, argv hộp kín (không tool/MCP/
+                        #   settings, cwd thư mục tạm rỗng), chạy 1 lượt + bản stream SSE
 ecosystem.config.js     # pm2: ai-agent-ui-next (chỉ Next app; ngrok do ~/IdeaProjects/gateway lo)
 scripts/
   snapshot.mjs          # chụp screenshot 1 trang (kèm --mark khoanh đỏ) → .snapshots/
@@ -320,6 +325,87 @@ Env liên quan (`ui-next/.env`):
 
 > ⚠️ Chỉ được **một** process poll một token. Bật `TELEGRAM_IN_PROCESS=1` thì phải
 > `pm2 stop ai-agent-telegram` trước, không thì Telegram trả 409 Conflict và cả hai đều nhận thiếu tin.
+
+## API cho bên thứ ba — `/api/v1/generate`
+
+Một đầu API để hệ thống NGOÀI gọi Claude sinh nội dung (viết bài, tóm tắt, dịch, đặt tiêu đề…).
+Khách chỉ gửi prompt và nhận text; không có đường nào để họ đọc/ghi file, chạy lệnh hay thấy dữ liệu
+nội bộ.
+
+**Bật**: đặt `PUBLIC_API_KEYS` trong `ui-next/.env` rồi `./scripts/pm2-restart.sh ai-agent-ui-next --fresh`
+(`pm2 restart` không nạp lại `.env`). Bỏ trống biến này = endpoint tắt, trả 503.
+
+```bash
+# sinh key cho từng khách
+openssl rand -hex 24
+# .env — định dạng "key:nhãn", nhãn dùng cho log và tính hạn mức
+PUBLIC_API_KEYS=ab12…:khach-a,cd34…:khach-b
+```
+
+**Gọi**:
+
+```bash
+# 1 lượt, trả JSON
+curl -X POST https://<domain>/ai/api/v1/generate \
+  -H 'Authorization: Bearer <API_KEY>' -H 'Content-Type: application/json' \
+  -d '{"prompt":"Viết bài viết 300 từ về con mèo","model":"sonnet"}'
+# → {"ok":true,"text":"…","usage":{"input_tokens":…,"output_tokens":…,"duration_ms":…}}
+
+# stream (SSE): event delta {text} … → done {usage} | error {error}
+curl -N 'https://<domain>/ai/api/v1/generate?prompt=Vi%E1%BA%BFt+v%E1%BB%81+con+m%C3%A8o&stream=1' \
+  -H 'Authorization: Bearer <API_KEY>'
+
+# GET không kèm prompt → trả bản mô tả tham số + hạn mức đang áp
+curl https://<domain>/ai/api/v1/generate -H 'Authorization: Bearer <API_KEY>'
+```
+
+Tham số: `prompt` (bắt buộc), `system` (chỉ dẫn thêm, được CỘNG vào system prompt nên ràng buộc an
+toàn vẫn giữ), `model` (`haiku|sonnet|opus`, mặc định `PUBLIC_API_MODEL`), `effort`
+(`low|medium|high`, mặc định `low`), `stream`.
+
+### Vì sao phải là hộp kín
+
+Prompt của bên thứ ba chạy qua CÙNG một CLI `claude` với các console nội bộ, nên nếu không bó lại thì
+họ thừa hưởng nguyên bộ ngữ cảnh của máy này. `lib/publicApi.js` chặn từng đường:
+
+| Ràng buộc | Cờ | Lý do |
+|---|---|---|
+| Không tool nào | `--tools ""` | không Read/Write/Bash → prompt không mở được file hay chạy lệnh |
+| Không MCP | `--strict-mcp-config` | không với tới Jira, MySQL 207, Google Sheets |
+| Bỏ settings user/project/local | `--setting-sources ""` | không nạp `~/.claude/settings.json`, không mang theo quy tắc nội bộ |
+| Xin phép là từ chối | `--permission-prompts none` | không có ai trả lời prompt permission → phải deny, không được treo |
+| Không lưu phiên | `--no-session-persistence` | request của khách không sinh transcript, không lẫn vào panel "Phiên đã lưu" |
+| cwd = thư mục tạm RỖNG | `PUBLIC_API_SANDBOX_DIR` | `CLAUDE.md` nạp theo cwd; chạy trong repo là câu trả lời cho khách thừa hưởng context REZIL |
+
+Xác thực KHÔNG dùng `UI_BASIC_AUTH`: key phát cho khách phải thu hồi được từng cái mà không đổi lối
+vào UI, nên `proxy.js` miễn `/api/v1` khỏi Basic Auth và route tự kiểm API key.
+
+### Hạn mức
+
+Đếm theo NHÃN khách, trong RAM của tiến trình Next (app restart thì reset — đây là van an toàn quota
+Claude, không phải billing): `PUBLIC_API_RATE_PER_MIN` (10), `PUBLIC_API_RATE_PER_DAY` (200),
+`PUBLIC_API_MAX_CONCURRENT` (2), `PUBLIC_API_MAX_PROMPT` (8000 ký tự), `PUBLIC_API_TIMEOUT_MS`
+(300000). Vượt → 429 kèm `Retry-After`; mỗi phản hồi có `X-RateLimit-Remaining-Minute/-Day`.
+
+### Tự đổi account Claude
+
+Hai lớp, áp cho CẢ gọi thường lẫn stream:
+
+1. **Trước khi chạy** — `chooseAccount()` như các console khác: account của pm2 cạn quota, mất đăng
+   nhập hoặc bị org chặn thì request chạy bằng account còn dư nhiều nhất. Endpoint stateless nên
+   không phải copy transcript giữa account (bước tốn nhất của `/chat` ở đây không tồn tại).
+2. **Giữa lượt** — lượt chết vì lỗi THUỘC ACCOUNT (429, org tắt Claude Code) được chạy lại bằng
+   account khác trên cùng request/stream, tối đa 3 lần spawn. Khách chỉ thấy đáp án tới chậm hơn,
+   không thấy lỗi. Account hỏng được đánh dấu vào cache quota (`markAccountExhausted/Blocked`) để
+   request sau chọn thẳng account khác, khỏi diễn lại màn "chạy hỏng rồi mới đổi".
+
+Với stream, điều kiện chạy lại là **chưa đẩy nội dung nào ra**: đẩy rồi mà chạy lại thì đáp án lượt
+mới nối vào đuôi lượt hỏng, mà hợp đồng công khai không có event "xoá phần đã gửi" như `reset_text`
+của console nội bộ. Vướng ở chỗ CLI in câu báo hết hạn mức ("You've hit your usage limit · resets
+3pm") NHƯ text của assistant, tức nó tới đúng đường `delta` — gửi thẳng ra là mất luôn quyền chạy
+lại ở đúng lượt cần nhất. Nên 200 ký tự đầu được giữ trong bộ đệm *probation* tới khi biết lượt lành
+hay hỏng: hỏng thì bỏ cùng cả lượt, lành thì đẩy ra rồi stream bình thường. Cái giá là đáp án chậm
+thêm đúng một nhịp đệm; hỏng GIỮA CHỪNG (đã qua nhịp đó) thì vẫn trả `event: error`, khách gọi lại.
 
 ## Nhiều account Claude — chat tự đổi khi hết quota
 
