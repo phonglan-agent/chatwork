@@ -177,13 +177,13 @@ npm run debug -- http://localhost:5173/ --env ~/.../rezil-esms-test.env \
 
 Đăng nhập & profile (phần hay dùng nhất):
 
-| Cần gì | Cờ |
-|---|---|
-| App có auth, đã có preset (rezil-esms-mobile) | `--login rezil` — tự nhập credential từ file env, submit, chờ rời màn login rồi quay lại đúng URL đã truyền; đang có session thì tự bỏ qua |
-| Giữ session giữa các lần chạy | `--profile <ten>` → `ui-next/.chrome-profiles/<ten>` (git-ignored). Không có cờ này thì Chrome tạo profile tạm, mỗi lần chạy là session trắng |
-| Trang chưa có preset (GitHub, Jira…) | `--profile <ten> --profile-login` mở cửa sổ Chrome thật để login tay một lần; đóng cửa sổ là script chạy tiếp headless |
-| Trang GitHub repo private | `--profile ci` — dùng luôn profile đã login của `scripts/capture-ci-evidence.sh` |
-| Chạy nhiều lệnh liên tiếp trên **cùng một màn** | `--keep <ten>` — xem "Chrome keep-alive" bên dưới |
+| Cần gì                                          | Cờ                                                                                                                                            |
+|-------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| App có auth, đã có preset (rezil-esms-mobile)   | `--login rezil` — tự nhập credential từ file env, submit, chờ rời màn login rồi quay lại đúng URL đã truyền; đang có session thì tự bỏ qua    |
+| Giữ session giữa các lần chạy                   | `--profile <ten>` → `ui-next/.chrome-profiles/<ten>` (git-ignored). Không có cờ này thì Chrome tạo profile tạm, mỗi lần chạy là session trắng |
+| Trang chưa có preset (GitHub, Jira…)            | `--profile <ten> --profile-login` mở cửa sổ Chrome thật để login tay một lần; đóng cửa sổ là script chạy tiếp headless                        |
+| Trang GitHub repo private                       | `--profile ci` — dùng luôn profile đã login của `scripts/capture-ci-evidence.sh`                                                              |
+| Chạy nhiều lệnh liên tiếp trên **cùng một màn** | `--keep <ten>` — xem "Chrome keep-alive" bên dưới                                                                                             |
 
 Không login thì gọi thẳng URL màn bên trong chỉ trả về **màn login**, và mọi thứ thu được (console,
 network, ảnh) là của màn login — script in cảnh báo rõ khi `--login` thất bại thay vì báo cáo im lặng.
@@ -225,12 +225,12 @@ nạp lại toàn bộ ở mỗi lượt và chỉ tăng dần trong một phiê
 
 Bốn chốt chặn đang áp (2026-08-27):
 
-| Chốt | Ở đâu | Cắt được |
-|---|---|---|
-| Bỏ settings khỏi context (`--setting-sources ''`), tự nạp lại 2 MCP server cần dùng qua `--strict-mcp-config --mcp-config .ai-agent/mcp-evidence.json` + `--model` | `lib/evidence.js` `buildEvidenceArgv` | 36,7k → 23,3k token nền mỗi lượt |
-| Spec tách đôi: `SCREEN_EVIDENCE.md` giữ rule (nhúng nguyên văn), `EVIDENCE_REFERENCE.md` giữ số đếm/ví dụ/snippet (agent `sed` khi cần) | `app/evidence/` | 12,6k → 8,8k token prompt |
-| Không `Read` file ảnh; kiểm bằng `scripts/shot-check.mjs` (tự decode PNG, đếm pixel đỏ, trả 1 dòng/ảnh) | spec §4 + prompt | ~2,5k token/ảnh, và ảnh không nằm lại trong context |
-| Cắt phiên theo batch: context vượt `EVIDENCE_MAX_CTX` thì mở phiên mới, chèn lại dòng `<<<STATE>>>` của lượt trước làm bối cảnh | `planSession()` + `app/api/evidence/route.js` | giữ context phẳng ~30k thay vì bò lên 152k |
+| Chốt                                                                                                                                                               | Ở đâu                                         | Cắt được                                            |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|-----------------------------------------------------|
+| Bỏ settings khỏi context (`--setting-sources ''`), tự nạp lại 2 MCP server cần dùng qua `--strict-mcp-config --mcp-config .ai-agent/mcp-evidence.json` + `--model` | `lib/evidence.js` `buildEvidenceArgv`         | 36,7k → 23,3k token nền mỗi lượt                    |
+| Spec tách đôi: `SCREEN_EVIDENCE.md` giữ rule (nhúng nguyên văn), `EVIDENCE_REFERENCE.md` giữ số đếm/ví dụ/snippet (agent `sed` khi cần)                            | `app/evidence/`                               | 12,6k → 8,8k token prompt                           |
+| Không `Read` file ảnh; kiểm bằng `scripts/shot-check.mjs` (tự decode PNG, đếm pixel đỏ, trả 1 dòng/ảnh)                                                            | spec §4 + prompt                              | ~2,5k token/ảnh, và ảnh không nằm lại trong context |
+| Cắt phiên theo batch: context vượt `EVIDENCE_MAX_CTX` thì mở phiên mới, chèn lại dòng `<<<STATE>>>` của lượt trước làm bối cảnh                                    | `planSession()` + `app/api/evidence/route.js` | giữ context phẳng ~30k thay vì bò lên 152k          |
 
 Ghi chú vận hành:
 
@@ -269,26 +269,82 @@ Chạy thật 2026-08-27: ghi 5 PR còn thiếu (row 1627–1631) → quét PR m
 thêm 4 PR còn thiếu (row 1632–1635) → điền bù 48 ô cột `AI Usage (%)` đang trống từ PR description
 (151 dòng vẫn trống vì PR không có mục đó). Đối chiếu lại với `gh`: khớp toàn bộ.
 
+## /translate — đối chiếu Basic Design VN ↔ JP
+
+Console `/translate` đọc hai bản Basic Design trên Google Sheet (bản tiếng Việt và bản tiếng Nhật) và
+trả lời hai câu: **đã dịch hết chưa** và **phần đã dịch sai sót gì**.
+
+Hai cặp file mặc định khai báo ở `lib/translate.js` → `TRANSLATE_PAIRS`:
+
+| Cặp          | VN                                             | JP                                             |
+|--------------|------------------------------------------------|------------------------------------------------|
+| `web`        | `1ABO6soPFhw9zFUUFgCnqEDSscw7ihmXosa_ETEmOoO8` | `1Ue5vSA2T_iwWMX1ooYNqPw4HENn3LarHpsAa9bHyriU` |
+| `mobile`     | `15cDzvbNfkzFGCMNSGGeFc3lSmCai4iqh-TsnliCSUPU` | `14JnuKAD0kjetvOHzrURIlaEGsheOE8VRxnwv4hggrXE` |
+| `batch`      | `1pJa_jb1GZhn-7ll-QiCH-Tt5B2yz1J22cwUb3qFXp3o` | `1EzvDCAu_vGQEgMMMlZqxDXVK70fLXE9Pa2akZhSB-qw` |
+| `portal`     | `1ACd_lJU6kZat3cu7w6sErv1TngR24MpNT3uRo5BpVQ4` | `1MimGJrwSo19TWmPYtMdYhzr0WuzMQO1waopGbMdlvmI` |
+| `offline`    | `1a1xSYSnqE6jTCKeEu8RFISP_gDoyJ1KndpfSJ5yoYKc` | `1koLDBXdekvUPde60EKT-M63j85dGI6LoC7Pr-kClg6U` |
+| `masterdata` | `1cG3GlJAgWOVOu9aE_nAw0_Gv80A-PvlnFSwDbwV14Xw` | `1CazkNxfGmWGGsljhoIYNc9JaNxbkxQJu7o6YRcKxLOc` |
+| `address`    | `1FwWjODrzfHIKEazZBKyRxNjFYgb37Av4vcZqtAGMkZY` | `19qQFrUrv55m_ehHwVNO6b0mNZWGxwEHxZnEbsqG01Hk` |
+| `testcase`   | `1YJa5iFt74z_bw0GfWy2CObK7JldkHfBbXRLDRwaQ86w` | `1XQ9nJEEYIzzgOE12vDMAGYx03ne6NRk_tKtEdewERVA` |
+
+Người dùng dán link khác thì dùng link đó. Mọi file phải được share cho service account
+`rezil-agent@rezil-agent.iam.gserviceaccount.com` (Viewer đủ để đối chiếu, Editor nếu muốn ghi tab kết
+quả) — chưa share thì Sheets API trả 403 và agent dừng, báo đúng địa chỉ cần share.
+
+Quy tắc nằm trong `app/translate/TRANSLATE_SPEC.md` — spec ĐỌC LÚC CHẠY, nhúng nguyên văn vào system
+prompt (giống `/kloc`, `/evidence`), sửa spec là đổi hành vi ngay lượt sau, **không cần build/restart**.
+Rút gọn:
+
+- Ghép dòng VN ↔ JP theo cột khoá (`Spec-ID`, mã lỗi, mã màn hình) khi có; không có thì theo toạ độ ô
+  (BD JP là bản copy layout của BD VN); lệch cấu trúc thì báo T7 thay vì đoán cặp dòng.
+- Phân loại: `T1` chưa dịch (JP trống) · `T2` sót tiếng Việt · `T3` copy nguyên bản VN · `T4` lệch
+  placeholder/số/mã · `T5` nghi sai nghĩa · `T6` thừa ở JP · `T7` lệch cấu trúc. T1–T4/T6/T7 là kết
+  luận máy móc; T5 là nhận định, luôn kèm lý do + đề xuất bản dịch và để riêng khỏi số lỗi.
+- Không tính là chưa dịch: `Field Name`/tên biến, `Spec-ID`, heading section tiếng Anh, link
+  Figma/diagrams, mã màn hình, thuật ngữ giữ nguyên theo tab `Glossary`.
+- Báo cáo: dòng phạm vi + bảng tổng quan (tỉ lệ đã dịch) + bảng chi tiết kèm địa chỉ ô thật + mục
+  riêng cho T5.
+- Cặp `testcase` là file test case SQA, không phải BD: ghép tab theo **mã màn hình** (tên tab JP có
+  chèn tiếng Nhật), header ở dòng 12, chỉ đối chiếu các cột nội dung — `Test IT Result`,
+  `Executed Date`, `SQA`, `Evidence` khác nhau thì báo riêng, không tính lỗi dịch (spec §8).
+- Cặp `offline` là bảng ma trận hành vi online/offline (ghép theo `SCREEN`+`TAB/GROUP`+`ITEM/BUTTON`,
+  spec §9); cặp `masterdata` (enum) và `address` (địa chỉ/khu vực Nhật) có nội dung tiếng Nhật ở cả hai
+  bản nên là đối chiếu ĐỒNG BỘ dữ liệu, không áp T2/T3 (spec §10).
+- Ghi report cho BSE: nói "ghi report" thì agent APPEND vào file checklist chung
+  `1zfkfhP016v4IkaqZ1gXH14OS33buRATvEnTdcQn33PI`, tab `ChecklistAI` — **mỗi dòng một điểm lệch**
+  (`STT | Tên File | Tên Sheet | LINK VN | LINK JP | Update` + `Ô VN | Ô JP | Loại | Nội dung VN |
+  Nội dung JP | Cần sửa`), `Update` luôn để `FALSE` cho BSE tick, deep link `gid` tra từ tab
+  `Checklist` chứ không bịa. Sheet khớp hoàn toàn thì không ghi dòng nào (spec §12). File này cần
+  quyền **Editor** cho service account.
+- **Nhớ tab đã soát**: trạng thái ở `ui-next/data/translate-scan-state.json` (git-ignored), đọc/ghi qua
+  `node ui-next/scripts/translate-state.mjs list|add|clear`. Đầu mỗi lượt agent `list` để bỏ qua tab đã
+  soát (ghi rõ trong bảng kế hoạch), sau mỗi tab soát xong thì `add` ngay. Soát lại chỉ khi bạn chỉ
+  đích danh tab hoặc nói "soát lại"; xoá trí nhớ bằng `clear --pair <cặp> [--sheet ...]` (spec §13).
+  Script là đường ghi file DUY NHẤT vì console này chặn `Write`/`Edit`.
+- Mặc định **chỉ đọc**. Nói "ghi kết quả vào sheet" thì agent ghi tab `Translate-Check` (tạo nếu chưa
+  có) rồi đọc lại verify; tab VN/JP gốc không bị sửa. `batch_update`, `rename_sheet`, `copy_sheet`,
+  `create_spreadsheet`, `share_spreadsheet`, `Write`/`Edit`/`Agent` đều bị chặn ở tool.
+
 ## Bot Telegram & cứu hộ pm2
 
 Bot **không** chạy chung tiến trình với Next nữa. Nó là pm2 app riêng `ai-agent-telegram`
 (`telegram-bot.mjs` → `lib/telegram.js`), vì bot chính là kênh cứu hộ: chạy chung thì một lần
 restart hỏng hay build lỗi là mất luôn đường ra lệnh "khởi động lại pm2".
 
-| Vấn đề đã gặp (2026-08-26) | Cách xử lý hiện tại |
-|---|---|
+| Vấn đề đã gặp (2026-08-26)                                                                                                                               | Cách xử lý hiện tại                                                                                                                           |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | Agent trong console gõ `pm2 restart ai-agent-ui-next` → pm2 giết cả cây process (agent là process con) → lệnh restart chết giữa chừng, app không lên lại | `scripts/pm2-restart.sh` tự `setsid` sang session mới nên sống sót; prompt guard `PM2_OPS_SAFETY` (lib/claude.js) cấm agent gọi pm2 trực tiếp |
-| App chết → bot chết theo → không còn kênh nào ra lệnh | Bot ở pm2 app riêng, `autorestart` + `restart_delay: 5s`; app Next chết không ảnh hưởng |
-| Không biết app đang sống hay chết | `/status` trong Telegram (đọc `pm2 jlist`) |
+| App chết → bot chết theo → không còn kênh nào ra lệnh                                                                                                    | Bot ở pm2 app riêng, `autorestart` + `restart_delay: 5s`; app Next chết không ảnh hưởng                                                       |
+| Không biết app đang sống hay chết                                                                                                                        | `/status` trong Telegram (đọc `pm2 jlist`)                                                                                                    |
 
 Lệnh trong Telegram — xử lý **trực tiếp bằng pm2 CLI, không qua `claude`**, nên vẫn dùng được khi
 agent hỏng hoặc hết quota:
 
-| Lệnh | Việc |
-|---|---|
-| `/status` | trạng thái + uptime + số lần restart của các app trong `TELEGRAM_PM2_APPS` |
-| `/restart [app]` | gọi `scripts/pm2-restart.sh` (mặc định `ai-agent-ui-next`); kết quả báo ngược về đúng chat |
-| `/logs [app] [n]` | `n` dòng log cuối (mặc định 40, tối đa 200) |
+| Lệnh              | Việc                                                                                       |
+|-------------------|--------------------------------------------------------------------------------------------|
+| `/status`         | trạng thái + uptime + số lần restart của các app trong `TELEGRAM_PM2_APPS`                 |
+| `/restart [app]`  | gọi `scripts/pm2-restart.sh` (mặc định `ai-agent-ui-next`); kết quả báo ngược về đúng chat |
+| `/logs [app] [n]` | `n` dòng log cuối (mặc định 40, tối đa 200)                                                |
 
 `scripts/pm2-restart.sh <app>` chạy bậc thang tự chữa: `pm2 restart --update-env` → chờ online →
 chưa được thì `pm2 delete` + `pm2 start ecosystem.config.js --only <app>` → vẫn hỏng thì gửi Telegram
@@ -297,11 +353,11 @@ app gọi nó chính là app bị restart (kể cả bot tự restart chính mì
 
 Hai điểm phải nhớ khi restart:
 
-| Vừa sửa gì | Làm gì |
-|---|---|
-| `app/**`, `lib/**` (JS/JSX) | `npm run build` **rồi** `./scripts/pm2-restart.sh <app>` |
-| `ui-next/.env` | `./scripts/pm2-restart.sh <app> **--fresh**` — `pm2 restart` KHÔNG nạp lại `.env`: `ecosystem.config.js` chỉ đọc file đó (qua dotenv) lúc `pm2 start`, nên `--fresh` bỏ qua bậc 1 và `delete` + `start` thẳng (kèm `pm2 save`) |
-| Spec/tài liệu `.md` (`app/evidence/*.md`…) | không cần build, cũng không cần restart — đọc lúc chạy |
+| Vừa sửa gì                                 | Làm gì                                                                                                                                                                                                                         |
+|--------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `app/**`, `lib/**` (JS/JSX)                | `npm run build` **rồi** `./scripts/pm2-restart.sh <app>`                                                                                                                                                                       |
+| `ui-next/.env`                             | `./scripts/pm2-restart.sh <app> **--fresh**` — `pm2 restart` KHÔNG nạp lại `.env`: `ecosystem.config.js` chỉ đọc file đó (qua dotenv) lúc `pm2 start`, nên `--fresh` bỏ qua bậc 1 và `delete` + `start` thẳng (kèm `pm2 save`) |
+| Spec/tài liệu `.md` (`app/evidence/*.md`…) | không cần build, cũng không cần restart — đọc lúc chạy                                                                                                                                                                         |
 
 **Rò biến môi trường của phiên Claude Code** (đo 2026-08-26): `pm2` nhét env của **shell gọi lệnh**
 vào app và đè cả phần `ecosystem.config.js` đã xoá — kể cả khi dùng `pm2 delete` + `pm2 start`. Gọi
@@ -316,12 +372,12 @@ tr '\0' '\n' < /proc/$(pm2 jlist | jq -r '.[]|select(.name=="ai-agent-ui-next").
 
 Env liên quan (`ui-next/.env`):
 
-| Biến | Ý nghĩa |
-|---|---|
-| `TELEGRAM_BOT_TOKEN` | thiếu là bot không chạy (app pm2 exit ngay) |
-| `TELEGRAM_ALLOWED_CHAT_IDS` | allowlist; rỗng = bot chỉ trả về chat id để tự whitelist |
-| `TELEGRAM_PM2_APPS` | app được phép /status /restart /logs (mặc định `ai-agent-ui-next,ai-agent-telegram`) |
-| `TELEGRAM_IN_PROCESS` | `1` = chạy bot trong app Next như cũ (chỉ dùng cho `npm run dev`) |
+| Biến                        | Ý nghĩa                                                                              |
+|-----------------------------|--------------------------------------------------------------------------------------|
+| `TELEGRAM_BOT_TOKEN`        | thiếu là bot không chạy (app pm2 exit ngay)                                          |
+| `TELEGRAM_ALLOWED_CHAT_IDS` | allowlist; rỗng = bot chỉ trả về chat id để tự whitelist                             |
+| `TELEGRAM_PM2_APPS`         | app được phép /status /restart /logs (mặc định `ai-agent-ui-next,ai-agent-telegram`) |
+| `TELEGRAM_IN_PROCESS`       | `1` = chạy bot trong app Next như cũ (chỉ dùng cho `npm run dev`)                    |
 
 > ⚠️ Chỉ được **một** process poll một token. Bật `TELEGRAM_IN_PROCESS=1` thì phải
 > `pm2 stop ai-agent-telegram` trước, không thì Telegram trả 409 Conflict và cả hai đều nhận thiếu tin.
@@ -368,14 +424,14 @@ toàn vẫn giữ), `model` (`haiku|sonnet|opus`, mặc định `PUBLIC_API_MODE
 Prompt của bên thứ ba chạy qua CÙNG một CLI `claude` với các console nội bộ, nên nếu không bó lại thì
 họ thừa hưởng nguyên bộ ngữ cảnh của máy này. `lib/publicApi.js` chặn từng đường:
 
-| Ràng buộc | Cờ | Lý do |
-|---|---|---|
-| Không tool nào | `--tools ""` | không Read/Write/Bash → prompt không mở được file hay chạy lệnh |
-| Không MCP | `--strict-mcp-config` | không với tới Jira, MySQL 207, Google Sheets |
-| Bỏ settings user/project/local | `--setting-sources ""` | không nạp `~/.claude/settings.json`, không mang theo quy tắc nội bộ |
-| Xin phép là từ chối | `--permission-prompts none` | không có ai trả lời prompt permission → phải deny, không được treo |
-| Không lưu phiên | `--no-session-persistence` | request của khách không sinh transcript, không lẫn vào panel "Phiên đã lưu" |
-| cwd = thư mục tạm RỖNG | `PUBLIC_API_SANDBOX_DIR` | `CLAUDE.md` nạp theo cwd; chạy trong repo là câu trả lời cho khách thừa hưởng context REZIL |
+| Ràng buộc                      | Cờ                          | Lý do                                                                                       |
+|--------------------------------|-----------------------------|---------------------------------------------------------------------------------------------|
+| Không tool nào                 | `--tools ""`                | không Read/Write/Bash → prompt không mở được file hay chạy lệnh                             |
+| Không MCP                      | `--strict-mcp-config`       | không với tới Jira, MySQL 207, Google Sheets                                                |
+| Bỏ settings user/project/local | `--setting-sources ""`      | không nạp `~/.claude/settings.json`, không mang theo quy tắc nội bộ                         |
+| Xin phép là từ chối            | `--permission-prompts none` | không có ai trả lời prompt permission → phải deny, không được treo                          |
+| Không lưu phiên                | `--no-session-persistence`  | request của khách không sinh transcript, không lẫn vào panel "Phiên đã lưu"                 |
+| cwd = thư mục tạm RỖNG         | `PUBLIC_API_SANDBOX_DIR`    | `CLAUDE.md` nạp theo cwd; chạy trong repo là câu trả lời cho khách thừa hưởng context REZIL |
 
 Xác thực KHÔNG dùng `UI_BASIC_AUTH`: key phát cho khách phải thu hồi được từng cái mà không đổi lối
 vào UI, nên `proxy.js` miễn `/api/v1` khỏi Basic Auth và route tự kiểm API key.
@@ -420,15 +476,15 @@ còn quota, **vẫn trên cùng phiên**, và in 1 dòng đầu lượt:
 
 Cơ chế:
 
-| Bước | Ở đâu |
-|---|---|
-| Khai báo account (dir + account mặc định) | `lib/config.js` → `ACCOUNTS`, `accountEnv`, `currentAccountKey` |
-| Đọc quota còn lại từng account (cache 60s) | `lib/limits.js` → `accountUsage`, `surveyAccounts`, `pickAccountWithQuota` |
-| Chọn account + đồng bộ transcript trước khi resume | `lib/accountSwitch.js` → `chooseAccount` |
-| Spawn `claude` bằng account đã chọn | `lib/claude.js` → `claudeSSE({ env, notice })` |
-| Đánh dấu account cạn khi run báo hết hạn mức | `app/api/{chat,release,evidence,kloc,investigate}/route.js` → `markAccountExhausted` |
-| Đánh dấu account bị tổ chức chặn Claude Code | `app/api/{chat,release,evidence,kloc,investigate}/route.js` → `markAccountBlocked` (xem dưới) |
-| Chạy lại NGAY trong lượt bằng account khác | `lib/claude.js` → `claudeSSE({ retry })` + `lib/accountSwitch.js` → `fallbackAccount` |
+| Bước                                               | Ở đâu                                                                                         |
+|----------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Khai báo account (dir + account mặc định)          | `lib/config.js` → `ACCOUNTS`, `accountEnv`, `currentAccountKey`                               |
+| Đọc quota còn lại từng account (cache 60s)         | `lib/limits.js` → `accountUsage`, `surveyAccounts`, `pickAccountWithQuota`                    |
+| Chọn account + đồng bộ transcript trước khi resume | `lib/accountSwitch.js` → `chooseAccount`                                                      |
+| Spawn `claude` bằng account đã chọn                | `lib/claude.js` → `claudeSSE({ env, notice })`                                                |
+| Đánh dấu account cạn khi run báo hết hạn mức       | `app/api/{chat,release,evidence,kloc,investigate}/route.js` → `markAccountExhausted`          |
+| Đánh dấu account bị tổ chức chặn Claude Code       | `app/api/{chat,release,evidence,kloc,investigate}/route.js` → `markAccountBlocked` (xem dưới) |
+| Chạy lại NGAY trong lượt bằng account khác         | `lib/claude.js` → `claudeSSE({ retry })` + `lib/accountSwitch.js` → `fallbackAccount`         |
 
 Phiên nằm ở `<CLAUDE_CONFIG_DIR>/projects/<cwd-mã-hoá>/<session-id>.jsonl`, nên account mới phải
 thấy được file đó. Hai cách, dùng song song được:

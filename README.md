@@ -206,7 +206,7 @@ See `WORKFLOW.md` / `WORKFLOW_FEATURE.md` for the full step lists and `CLAUDE.md
 A browser UI (**Next.js + React + Tailwind**, in `ui-next/`) to hand a ticket/task to Claude, which
 **implements it end-to-end up to creating the PR**. Dark/light theme, responsive, Vietnamese.
 
-Every surface (`/auto`, `/feature`, `/story`, `/chat`, `/release`) is the **same console shell** — a
+Every surface (`/auto`, `/feature`, `/story`, `/chat`, `/release`, `/translate`) is the **same console shell** — a
 header, a streaming conversation log, and a composer at the bottom. They differ only by what the
 composer collects (ticket+repo / free task / chat input) and whether edits are allowed.
 
@@ -239,6 +239,33 @@ The REZIL coding workflows — pick by task type:
   Non-interactive — it states assumptions and proceeds.
 - Binds **127.0.0.1 only**; **Basic Auth** via `ui-next/.env` `UI_BASIC_AUTH` (needed when exposed via ngrok).
 - ⚠️ Auto mode makes **real changes** to the selected repo and opens a **real PR**. Review before merging.
+
+### Translate (`/translate`)
+A multi-turn console that compares a **Vietnamese document against its Japanese translation** on Google
+Sheets and reports every mismatch, cell by cell, for the BSE to fix. Read-only by default.
+
+- **8 file pairs are pre-registered** in `ui-next/lib/translate.js` → `TRANSLATE_PAIRS`: `web`,
+  `mobile`, `batch`, `portal` (Basic Design), `offline` (online/offline behaviour matrix),
+  `masterdata` + `address` (enum / master data), `testcase` (SQA test cases). Type the keyword instead
+  of pasting links; pasting other Sheet links still works.
+- **Findings are typed** `T1` not translated · `T2` Vietnamese left in the JP file · `T3` VN copied
+  verbatim · `T4` placeholder/number/code mismatch · `T5` suspected mistranslation (judgement, always
+  with a reason + suggested wording) · `T6` extra in JP · `T7` structural mismatch. Field names,
+  Spec-IDs, English section headings and Figma links are **not** counted as untranslated.
+- **Report format is written for the BSE**: 6 columns `Ô VN | Ô JP | Loại | Nội dung VN | Nội dung JP |
+  Cần sửa`, cell addresses spelled `<tab>!<cell>` and both sides quoted verbatim, so they can open the
+  Sheet and fix in place. Sweeping a whole file prints a plan first, then runs in batches of 3–5 tabs.
+- **Writing the report** (only when you ask): appends to the shared checklist spreadsheet
+  `1zfkfhP016v4IkaqZ1gXH14OS33buRATvEnTdcQn33PI`, tab `ChecklistAI` — **one row per mismatch**,
+  `Update` always left `FALSE` for the BSE to tick, deep links (`gid`) looked up from the `Checklist`
+  tab and never invented. Append-only; the source VN/JP tabs are never modified.
+- **Already-scanned tabs are remembered** in `ui-next/data/translate-scan-state.json` (git-ignored) via
+  `ui-next/scripts/translate-state.mjs` — the agent lists it before planning and skips those tabs, and
+  records each tab right after scanning it. It rescans only when you name that tab or say "soát lại".
+- All rules live in `ui-next/app/translate/TRANSLATE_SPEC.md`, **read at runtime** — editing the spec
+  changes behaviour on the next turn, no build/restart needed.
+- Needs the service account `rezil-agent@rezil-agent.iam.gserviceaccount.com` shared on each file
+  (Viewer to compare, Editor on the checklist file to write). A 403 stops the agent with that message.
 
 ### Chat (`/chat`)
 A Q&A console — open per project from Home (REZIL → `/chat?project=rezil`, Story → `?project=story`;
@@ -310,7 +337,7 @@ alt account had are moved over (never overwritten); a real `memory/` dir is move
 **Never symlink `.credentials.json`** — that file *is* the account identity. `todos/` and
 `file-history/` (`/rewind`) stay per-account by design.
 
-### Automatic fallback in `/chat`, `/release`, `/evidence`, `/kloc`, `/investigate`
+### Automatic fallback in `/chat`, `/release`, `/evidence`, `/kloc`, `/translate`, `/investigate`
 
 When the pm2 account runs out of quota, those consoles run the next turn on the account with the
 most quota left, on the **same session**, and prints one line (`⚠️ acct1 hết quota … chuyển sang acct3`).

@@ -929,7 +929,7 @@ export default function AgentConsole({ config }) {
 
       <div ref={logRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-4">
         {messages.length === 0 ? (
-          <div className="m-auto flex max-w-md flex-col items-center gap-4 text-center">
+          <div className="m-auto flex max-w-lg flex-col items-center gap-4 text-center">
             <div className="text-4xl">{config.icon}</div>
             <p className="text-sm text-muted">{config.emptyText}</p>
             {!isJob && (config.examples || []).length ? (

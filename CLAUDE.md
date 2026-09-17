@@ -89,9 +89,15 @@ ai-agent/
 │   └── commit_message.md
 │
 └── ui-next/               # Next.js (App Router + React + Tailwind) web UI — port 5000, ngrok, Basic Auth
-    ├── app/               # pages (auto REZIL/Feature/Story, release, chat, /kloc, /usage) + api route handlers (SSE)
+    ├── app/               # pages (auto REZIL/Feature/Story, release, chat, /kloc, /translate, /usage)
+    │                      #   + api route handlers (SSE)
     │                      #   /kloc: đọc PR merge 4 repo rezil → append LoC vào Sheet KLoC-MVP2
     │                      #   (spec app/kloc/KLOC_SPEC.md đọc lúc chạy, không cần build)
+    │                      #   /translate: đối chiếu tài liệu bản VN ↔ bản JP trên Google Sheet (8 cặp
+    │                      #   file khai ở lib/translate.js), báo điểm lệch cho BSE; ghi report vào tab
+    │                      #   ChecklistAI khi được yêu cầu (spec app/translate/TRANSLATE_SPEC.md,
+    │                      #   đọc lúc chạy, không cần build); tab đã soát nhớ trong
+    │                      #   data/translate-scan-state.json qua scripts/translate-state.mjs
     ├── lib/               # config / claude SSE / auto+feature+story+release prompts / usage / limits / job-lock
     │                      #   + accountSwitch.js: chat tự đổi account Claude khi hết quota (xem §Nhiều account)
     ├── proxy.js           # HTTP Basic Auth (UI_BASIC_AUTH) — Next "proxy" convention
@@ -143,7 +149,7 @@ mặc định), `acct2` = `~/.claude-account2`, `acct3` = `~/.claude-account3`. 
   để chạy; chạy một lần cho MỖI account phụ: `CLAUDE_ALT_DIR=~/.claude-account2 ./scripts/share-projects.sh go`
   — mặc định `CLAUDE_ALT_DIR` là `~/.claude-account3`; mỗi cwd mới cần chạy lại 1 lần).
   **Không bao giờ symlink `.credentials.json`.**
-- **Console `/chat`, `/release`, `/evidence`, `/kloc` và `/investigate` tự đổi account** khi account đang
+- **Console `/chat`, `/release`, `/evidence`, `/kloc`, `/translate` và `/investigate` tự đổi account** khi account đang
   dùng hết quota, giữ nguyên phiên, in 1 dòng thông báo. Logic ở `ui-next/lib/accountSwitch.js`;
   fail-open (không rõ quota → giữ account cũ). Console job còn lại (`/auto`, `/feature`, `/rebase`,
   `/report`) vẫn dùng account của pm2. Chi tiết: `ui-next/README.md` §Nhiều account Claude, `README.md` §9.

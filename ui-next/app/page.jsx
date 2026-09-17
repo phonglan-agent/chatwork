@@ -22,6 +22,7 @@ const GROUPS = [
       { href: "/report", icon: "📊", title: "Report", body: "Chat báo cáo Jira — Claude dựng JQL, lấy data qua REST API, tự phân tích" },
       { href: "/sprint", icon: "📉", title: "Sprint giờ âm", body: "Upload Excel burndown → report Actual giờ âm (Chatwork)" },
       { href: "/kloc", icon: "📐", title: "KLOC", body: "Đọc PR merge 4 repo rezil → append LoC/KLoC vào Google Sheet KLoC-MVP2" },
+      { href: "/translate", icon: "🈳", title: "Translate", body: "Đối chiếu Basic Design bản VN ↔ bản JP trên Google Sheet — dịch thiếu, sót tiếng Việt, nghi sai nghĩa" },
       { href: "/evidence", icon: "📸", title: "Evidence", body: "Chụp/gán evidence test case lên Google Sheet SQA — đối chiếu Drive, chụp web mobile, ghi cột Evidence" },
       { href: "/chat?project=rezil", icon: "💬", title: "Chat", body: "Hỏi/sửa code · gõ /usage xem giới hạn" },
     ],

@@ -10,3 +10,6 @@ node_modules
 
 # Index "phiên nào của console nào" do ui-next ghi lúc chạy (lib/sessions.js)
 .ai-agent/
+
+# Trạng thái "tab nào đã soát" của console /translate (ui-next/scripts/translate-state.mjs)
+ui-next/data/
