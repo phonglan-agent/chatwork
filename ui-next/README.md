@@ -315,7 +315,8 @@ Rút gọn:
   (`STT | Tên File | Tên Sheet | LINK VN | LINK JP | Update` + `Loại | Nội dung VN | Nội dung JP |
   Cần sửa`), trong đó `LINK VN`/`LINK JP` trỏ THẲNG tới ô cần sửa (`…#gid=<gid>&range=<ô>`) nên không
   cần cột địa chỉ ô riêng; `Update` luôn để `FALSE` cho BSE tick; `gid` tra từ tab `Checklist` chứ
-  không bịa. Sheet khớp hoàn toàn thì không ghi dòng nào (spec §12). File này cần
+  không bịa. **Mặc định chỉ ghi `T1`/`T2`/`T3`/`T6`/`T7`** — `T4` và `T5` chỉ ghi khi bạn yêu cầu rõ,
+  còn lại vẫn báo đủ trong console. Sheet khớp hoàn toàn thì không ghi dòng nào (spec §12). File này cần
   quyền **Editor** cho service account.
 - **Nhớ tab đã soát**: trạng thái ở `ui-next/data/translate-scan-state.json` (git-ignored), đọc/ghi qua
   `node ui-next/scripts/translate-state.mjs list|add|clear`. Đầu mỗi lượt agent `list` để bỏ qua tab đã

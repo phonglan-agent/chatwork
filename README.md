@@ -259,7 +259,8 @@ Sheets and reports every mismatch, cell by cell, for the BSE to fix. Read-only b
   `1zfkfhP016v4IkaqZ1gXH14OS33buRATvEnTdcQn33PI`, tab `ChecklistAI` — **one row per mismatch**, where
   `LINK VN`/`LINK JP` point straight at the offending cell (`…#gid=<gid>&range=<cell>`) so no separate
   address column is needed, `Update` is always left `FALSE` for the BSE to tick, and the `gid` is
-  looked up from the `Checklist` tab, never invented. Append-only; the source VN/JP tabs are never modified.
+  looked up from the `Checklist` tab, never invented. Only `T1`/`T2`/`T3`/`T6`/`T7` rows are written by
+  default — `T4` and `T5` are console-only unless you ask for them. Append-only; the source VN/JP tabs are never modified.
 - **Already-scanned tabs are remembered** in `ui-next/data/translate-scan-state.json` (git-ignored) via
   `ui-next/scripts/translate-state.mjs` — the agent lists it before planning and skips those tabs, and
   records each tab right after scanning it. It rescans only when you name that tab or say "soát lại".

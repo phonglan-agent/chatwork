@@ -205,6 +205,11 @@ tab `Checklist`.
 **Một dòng = MỘT ĐIỂM LỆCH** (không phải một sheet). Sheet nào soát xong mà khớp hoàn toàn thì KHÔNG
 ghi dòng nào, chỉ báo trong console.
 
+**Mặc định CHỈ ghi các loại `T1`, `T2`, `T3`, `T6`, `T7`.** `T4` (lệch placeholder/số/mã) và `T5`
+(nghi sai nghĩa) **không** được ghi, trừ khi người dùng yêu cầu rõ ("ghi cả T4", "ghi luôn T5", "ghi
+hết các loại"). Hai loại này vẫn phải báo đầy đủ trong console theo §5 — chỉ là không tự đổ vào
+`ChecklistAI`. Cuối mỗi lượt ghi phải nêu: `Đã bỏ qua khi ghi: <n> T4, <m> T5 (yêu cầu nếu muốn ghi)`.
+
 Cột A–F đã có sẵn header, cột G–J là phần chi tiết. Lượt ghi đầu tiên: nếu `G1:J1` còn trống thì ghi
 header `Loại | Nội dung VN | Nội dung JP | Cần sửa`, KHÔNG sửa `A1:F1`.
 
