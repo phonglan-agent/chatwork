@@ -312,9 +312,10 @@ Rút gọn:
   bản nên là đối chiếu ĐỒNG BỘ dữ liệu, không áp T2/T3 (spec §10).
 - Ghi report cho BSE: nói "ghi report" thì agent APPEND vào file checklist chung
   `1zfkfhP016v4IkaqZ1gXH14OS33buRATvEnTdcQn33PI`, tab `ChecklistAI` — **mỗi dòng một điểm lệch**
-  (`STT | Tên File | Tên Sheet | LINK VN | LINK JP | Update` + `Ô VN | Ô JP | Loại | Nội dung VN |
-  Nội dung JP | Cần sửa`), `Update` luôn để `FALSE` cho BSE tick, deep link `gid` tra từ tab
-  `Checklist` chứ không bịa. Sheet khớp hoàn toàn thì không ghi dòng nào (spec §12). File này cần
+  (`STT | Tên File | Tên Sheet | LINK VN | LINK JP | Update` + `Loại | Nội dung VN | Nội dung JP |
+  Cần sửa`), trong đó `LINK VN`/`LINK JP` trỏ THẲNG tới ô cần sửa (`…#gid=<gid>&range=<ô>`) nên không
+  cần cột địa chỉ ô riêng; `Update` luôn để `FALSE` cho BSE tick; `gid` tra từ tab `Checklist` chứ
+  không bịa. Sheet khớp hoàn toàn thì không ghi dòng nào (spec §12). File này cần
   quyền **Editor** cho service account.
 - **Nhớ tab đã soát**: trạng thái ở `ui-next/data/translate-scan-state.json` (git-ignored), đọc/ghi qua
   `node ui-next/scripts/translate-state.mjs list|add|clear`. Đầu mỗi lượt agent `list` để bỏ qua tab đã

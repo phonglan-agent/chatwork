@@ -256,9 +256,10 @@ Sheets and reports every mismatch, cell by cell, for the BSE to fix. Read-only b
   Cần sửa`, cell addresses spelled `<tab>!<cell>` and both sides quoted verbatim, so they can open the
   Sheet and fix in place. Sweeping a whole file prints a plan first, then runs in batches of 3–5 tabs.
 - **Writing the report** (only when you ask): appends to the shared checklist spreadsheet
-  `1zfkfhP016v4IkaqZ1gXH14OS33buRATvEnTdcQn33PI`, tab `ChecklistAI` — **one row per mismatch**,
-  `Update` always left `FALSE` for the BSE to tick, deep links (`gid`) looked up from the `Checklist`
-  tab and never invented. Append-only; the source VN/JP tabs are never modified.
+  `1zfkfhP016v4IkaqZ1gXH14OS33buRATvEnTdcQn33PI`, tab `ChecklistAI` — **one row per mismatch**, where
+  `LINK VN`/`LINK JP` point straight at the offending cell (`…#gid=<gid>&range=<cell>`) so no separate
+  address column is needed, `Update` is always left `FALSE` for the BSE to tick, and the `gid` is
+  looked up from the `Checklist` tab, never invented. Append-only; the source VN/JP tabs are never modified.
 - **Already-scanned tabs are remembered** in `ui-next/data/translate-scan-state.json` (git-ignored) via
   `ui-next/scripts/translate-state.mjs` — the agent lists it before planning and skips those tabs, and
   records each tab right after scanning it. It rescans only when you name that tab or say "soát lại".

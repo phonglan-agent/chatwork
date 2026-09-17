@@ -39,6 +39,10 @@ dùng chỉ định bỏ.
 | T6 | Thừa ở JP                  | JP có nội dung mà VN trống hoặc không tồn tại dòng tương ứng                                                               |
 | T7 | Lệch cấu trúc              | Số dòng/cột khác nhau, header khác nhau, khoá trùng lặp hoặc chỉ có ở một bên                                              |
 
+Bảng này cũng được đặt ở tab `MetaData` của file checklist
+(`1zfkfhP016v4IkaqZ1gXH14OS33buRATvEnTdcQn33PI`) để BSE tra khi đọc report. Spec ở đây là bản gốc —
+sửa phân loại thì cập nhật cả tab đó cho khớp.
+
 T1–T4, T6, T7 là phát hiện **máy móc, chắc chắn** — kết luận dứt khoát.
 T5 là **nhận định** — luôn ghi kèm lý do ngắn (sai chỗ nào) và gợi ý bản sửa; không khẳng định như lỗi
 chắc chắn, không tính vào "số lỗi" chung mà để riêng.
@@ -201,32 +205,32 @@ tab `Checklist`.
 **Một dòng = MỘT ĐIỂM LỆCH** (không phải một sheet). Sheet nào soát xong mà khớp hoàn toàn thì KHÔNG
 ghi dòng nào, chỉ báo trong console.
 
-Cột A–F đã có sẵn header, cột G–L là phần chi tiết. Lượt ghi đầu tiên: nếu `G1:L1` còn trống thì ghi
-header `Ô VN | Ô JP | Loại | Nội dung VN | Nội dung JP | Cần sửa`, KHÔNG sửa `A1:F1`.
+Cột A–F đã có sẵn header, cột G–J là phần chi tiết. Lượt ghi đầu tiên: nếu `G1:J1` còn trống thì ghi
+header `Loại | Nội dung VN | Nội dung JP | Cần sửa`, KHÔNG sửa `A1:F1`.
 
-| Cột             | Nội dung                                                                                                                                                                                            |
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| A `STT`         | Số thứ tự tăng dần liên tục theo cả bảng (dòng cuối đang có + 1), không đánh lại từ 1 mỗi lượt                                                                                                      |
-| B `Tên File`    | Nhãn file như tab `Checklist` dùng: `Admin`, `Mobile`, `BATCH`, `Portal`… File không có trong `Checklist` thì lấy nhãn cặp trong `TRANSLATE_PAIRS` (`offline`, `masterdata`, `address`, `testcase`) |
-| C `Tên Sheet`   | Tên tab bản VN, nguyên văn                                                                                                                                                                          |
-| D `LINK VN`     | Deep link tới đúng tab VN (`…/edit#gid=<gid>`)                                                                                                                                                      |
-| E `LINK JP`     | Deep link tới đúng tab JP. Bản JP không có tab đó → ghi `#N/A`                                                                                                                                      |
-| F `Update`      | Luôn ghi `FALSE` — checkbox để BSE tự tick sau khi sửa. KHÔNG bao giờ tự set `TRUE`                                                                                                                 |
-| G `Ô VN`        | `<tên tab>!<ô>`, vd `MOB-001 Login!C46`. Không có ô tương ứng → `(không có)`                                                                                                                        |
-| H `Ô JP`        | Như trên, bên bản JP                                                                                                                                                                                |
-| I `Loại`        | `T1`…`T7` theo §3                                                                                                                                                                                   |
-| J `Nội dung VN` | Nguyên văn, cắt 120 ký tự + `…`; ô trống ghi `(trống)`                                                                                                                                              |
-| K `Nội dung JP` | Như trên                                                                                                                                                                                            |
-| L `Cần sửa`     | Hành động cụ thể cho BSE, kèm bản dịch đề xuất nếu có                                                                                                                                               |
+| Cột             | Nội dung                                                                                                                                                                                                                  |
+|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A `STT`         | Số thứ tự tăng dần liên tục theo cả bảng (dòng cuối đang có + 1), không đánh lại từ 1 mỗi lượt                                                                                                                            |
+| B `Tên File`    | Nhãn file như tab `Checklist` dùng: `Admin`, `Mobile`, `BATCH`, `Portal`… File không có trong `Checklist` thì lấy nhãn cặp trong `TRANSLATE_PAIRS` (`offline`, `masterdata`, `address`, `testcase`)                       |
+| C `Tên Sheet`   | Tên tab bản VN, nguyên văn                                                                                                                                                                                                |
+| D `LINK VN`     | Link trỏ thẳng tới **ô cần sửa** ở bản VN: `https://docs.google.com/spreadsheets/d/<id>/edit#gid=<gid>&range=<ô>`, vd `…/edit#gid=1333567139&range=C46`. Không có ô tương ứng (điểm lệch T6) → link tới tab, bỏ `&range=` |
+| E `LINK JP`     | Như cột D nhưng trỏ tới ô bên bản JP. Bản JP chưa có tab đó → ghi `#N/A`                                                                                                                                                  |
+| F `Update`      | Luôn ghi `FALSE` — checkbox để BSE tự tick sau khi sửa. KHÔNG bao giờ tự set `TRUE`                                                                                                                                       |
+| G `Loại`        | `T1`…`T7` theo §3                                                                                                                                                                                                         |
+| H `Nội dung VN` | Nguyên văn, cắt 120 ký tự + `…`; ô trống ghi `(trống)`                                                                                                                                                                    |
+| I `Nội dung JP` | Như trên                                                                                                                                                                                                                  |
+| J `Cần sửa`     | Hành động cụ thể cho BSE, kèm bản dịch đề xuất nếu có                                                                                                                                                                     |
 
-Lấy deep link (`gid`): tra tab `Checklist` — cột `Tên File` + `Tên Sheet` khớp thì lấy nguyên link ở
-cột `LINK VN` / `LINK JP`. Không có trong `Checklist` thì ghi link file không kèm `gid` và ghi chú
-`(thiếu gid)` ở cột `Cần sửa`; TUYỆT ĐỐI không bịa số `gid`.
+Không ghi cột địa chỉ ô riêng: địa chỉ đã nằm trong `&range=` của hai link, BSE bấm là nhảy đúng ô.
+
+Lấy `gid`: tra tab `Checklist` — cột `Tên File` + `Tên Sheet` khớp thì lấy `gid` trong link ở cột
+`LINK VN` / `LINK JP` rồi gắn thêm `&range=<ô>`. Không có trong `Checklist` thì ghi link file không
+kèm `gid`/`range` và ghi chú `(thiếu gid)` ở cột `Cần sửa`; TUYỆT ĐỐI không bịa số `gid`.
 
 Cách ghi:
 
-1. Đọc `ChecklistAI!A:L` để biết dòng cuối và STT lớn nhất; đọc luôn các dòng cũ để KHÔNG ghi trùng
-   một điểm lệch đã có (trùng = cùng `Tên Sheet` + `Ô JP` + `Loại`).
+1. Đọc `ChecklistAI!A:J` để biết dòng cuối và STT lớn nhất; đọc luôn các dòng cũ để KHÔNG ghi trùng
+   một điểm lệch đã có (trùng = cùng `Tên Sheet` + `LINK JP` + `Loại`).
 2. APPEND một phát bằng `batch_update_cells` xuống dưới dòng cuối. Chỉ APPEND — không sửa, không xoá,
    không chèn dòng giữa bảng, không sort, không đụng cột `Update` của dòng cũ.
 3. Ghi xong đọc lại đúng vùng vừa ghi, đối chiếu số dòng và STT rồi mới báo xong; lệch thì dừng và báo.
