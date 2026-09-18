@@ -29,8 +29,9 @@ function snapshotInstr(defaultUrl) {
     `      --mark "<selector-1>::<ghi chú tiếng Việt>" --mark "<selector-2>::<ghi chú tiếng Việt>"\n` +
     "  Chọn selector ổn định (id, data-*, class đặc trưng). Nếu script báo 'chỉ khoanh được x/y item' " +
     "thì selector sai — sửa lại rồi chụp lần nữa.\n" +
-    "Lệnh in ra đường dẫn ảnh ở dòng cuối stdout (vd `/ai/api/snapshot/xxx.png`). Hãy chèn NGUYÊN " +
-    "đường dẫn đó vào câu trả lời dưới dạng ảnh Markdown `![mô tả](/ai/api/snapshot/xxx.png)` để ảnh " +
+    "Lệnh in ra đường dẫn ảnh ở dòng cuối stdout (vd `/api/snapshot/xxx.png`). Hãy chèn NGUYÊN " +
+    "đường dẫn đó vào câu trả lời dưới dạng ảnh Markdown `![mô tả](<đường dẫn vừa in>)` — KHÔNG tự " +
+    "thêm/bớt tiền tố, script đã tự ghép basePath nếu có — để ảnh " +
     "hiển thị ngay trong khung chat. Chỉ chụp khi được yêu cầu kiểm tra giao diện — không tự chụp sau mỗi lần sửa."
   );
 }
@@ -77,7 +78,7 @@ export const DISALLOWED_TOOLS = [
   // system prompt is the brake forbidding force-push of `develop`/`main`.
 ];
 
-// Branch/push guardrail shared by EVERY edit-capable flow (auto REZIL/feature/story/film + chat).
+// Branch/push guardrail shared by EVERY edit-capable flow (auto REZIL/feature + chat).
 // Root cause it prevents: a new branch has no upstream, so a bare `git push` can resolve to the base
 // branch (push.default=upstream/tracking, or HEAD still sitting on develop) → commit lands on develop.
 // Fix = branch BEFORE editing, verify HEAD before commit, and always push with `-u origin HEAD`.
@@ -138,7 +139,7 @@ export const PM2_OPS_SAFETY = [
   "   app đó đang chạy (Telegram trả 409 Conflict).",
 ].join("\n");
 
-// Anti-degrade guardrail shared by EVERY code-changing flow (auto REZIL/feature/story/film, chat ở
+// Anti-degrade guardrail shared by EVERY code-changing flow (auto REZIL/feature, chat ở
 // chế độ sửa code, rebase console, release console). Yêu cầu người dùng 2026-08-13: sửa code ở BẤT KỲ
 // route nào cũng phải soát kỹ để không làm hỏng chức năng đang chạy đúng. Từng luật dưới đây lấy từ
 // case đã dính, KHÔNG phải quy tắc chung chung — chi tiết trong AGENT_RULES.md §Chống degrade.
@@ -238,7 +239,7 @@ function chatSystemPrompt(project, canEdit) {
   if (project === "free") {
     // Unrestricted, all-projects mode. cwd = workspace root (~/IdeaProjects) with every repo in scope.
     return [
-      "Bạn là trợ lý kỹ thuật TOÀN NĂNG, làm việc trên MỌI project trong thư mục làm việc (~/IdeaProjects) — rezil-esms, story, ai-film-studio và bất kỳ repo nào khác nằm trong đó.",
+      "Bạn là trợ lý kỹ thuật TOÀN NĂNG, làm việc trên MỌI project trong thư mục làm việc (~/IdeaProjects) — rezil-esms và bất kỳ repo nào khác nằm trong đó.",
       "Mỗi repo có CLAUDE.md / .claude/agents / .mcp.json riêng — khi thao tác trong repo nào thì tuân theo quy ước của repo đó.",
       "Bạn được TOÀN QUYỀN: đọc + sửa/tạo/xoá file (Read/Edit/Write), chạy mọi lệnh (Bash), git, gọi Agent và mọi tool/MCP có sẵn. KHÔNG có hạn chế nào.",
       "Vì không có rào chắn, hãy cẩn trọng với thao tác phá huỷ (xoá, force-push, reset, drop DB) — chỉ làm khi yêu cầu rõ ràng. Sau khi thay đổi, giải thích ngắn gọn đã làm gì.",
@@ -253,54 +254,6 @@ function chatSystemPrompt(project, canEdit) {
       WORDING_INSTR,
       SUGGEST_INSTR,
     ].join("\n");
-  }
-  if (project === "story") {
-    const base = [
-      'Bạn là trợ lý kỹ thuật cho repo "story" (đọc truyện: Laravel + Next.js + Expo + Python workers).',
-      "Repo có CLAUDE.md + .claude/agents + .mcp.json riêng (đã nạp) — tuân theo. Trả lời TIẾNG VIỆT, gọn, đúng trọng tâm.",
-    ];
-    if (canEdit) {
-      base.push(
-        "Chế độ SỬA CODE BẬT: được đọc + CHỈNH SỬA file (Edit/Write), chạy lệnh read-only/build/test (Bash), và dùng Agent để gọi agent layer của story.",
-        "GIỚI HẠN: KHÔNG merge PR, KHÔNG deploy, KHÔNG --no-verify, KHÔNG force-push `develop`/`main` (force-push nhánh của mình được nếu cần). Tên branch/commit/PR/code giữ tiếng Anh theo convention.",
-        GIT_BRANCH_SAFETY,
-        WORKTREE_INSTR,
-        NO_DEGRADE_SAFETY,
-        snapshotInstr("http://localhost:3000"),
-        debugInstr("http://localhost:3000")
-      );
-    } else {
-      base.push(
-        "Bạn CÓ THỂ đọc code (Read/Grep/Glob), query postgres-story read-only và tìm web để trả lời.",
-        "KHÔNG sửa/tạo/xoá file, không chạy lệnh shell, không git. Đây là chế độ hỏi-đáp."
-      );
-    }
-    base.push(WORDING_INSTR, SUGGEST_INSTR);
-    return base.join("\n");
-  }
-  if (project === "film") {
-    const base = [
-      'Bạn là trợ lý kỹ thuật cho repo "ai-film-studio" (Phim AI Studio: Next.js 16 + React 19 + TypeScript + Prisma/SQLite + Tailwind, worker render video qua ComfyUI).',
-      "Repo có CLAUDE.md + AGENTS.md + PLAN.md riêng (đã nạp) — tuân theo. Trả lời TIẾNG VIỆT, gọn, đúng trọng tâm.",
-    ];
-    if (canEdit) {
-      base.push(
-        "Chế độ SỬA CODE BẬT: được đọc + CHỈNH SỬA file (Edit/Write), chạy lệnh read-only/build/test (Bash).",
-        "GIỚI HẠN: KHÔNG merge PR, KHÔNG deploy, KHÔNG --no-verify, KHÔNG force-push `develop`/`main` (force-push nhánh của mình được nếu cần). Tên branch/commit/PR/code giữ tiếng Anh theo convention.",
-        GIT_BRANCH_SAFETY,
-        WORKTREE_INSTR,
-        NO_DEGRADE_SAFETY,
-        snapshotInstr("http://localhost:4100"),
-        debugInstr("http://localhost:4100")
-      );
-    } else {
-      base.push(
-        "Bạn CÓ THỂ đọc code (Read/Grep/Glob) và tìm web để trả lời.",
-        "KHÔNG sửa/tạo/xoá file, không chạy lệnh shell, không git. Đây là chế độ hỏi-đáp."
-      );
-    }
-    base.push(WORDING_INSTR, SUGGEST_INSTR);
-    return base.join("\n");
   }
   // rezil
   const base = ["Bạn là trợ lý kỹ thuật cho dự án rezil-esms. Trả lời bằng TIẾNG VIỆT, ngắn gọn, đúng trọng tâm."];
@@ -330,21 +283,6 @@ function chatSystemPrompt(project, canEdit) {
 }
 
 function chatTools(project, canEdit) {
-  if (project === "story") {
-    const allow = canEdit
-      ? ["Read", "Grep", "Glob", "Edit", "Write", "Bash", "Agent", "TodoWrite", "WebSearch", "WebFetch", "mcp__postgres-story"]
-      : ["Read", "Grep", "Glob", "WebSearch", "WebFetch", "mcp__postgres-story"];
-    const disallow = canEdit ? DISALLOWED_TOOLS : ["Edit", "Write", "NotebookEdit", "Bash", "Agent", "AskUserQuestion"];
-    return { allow, disallow };
-  }
-  if (project === "film") {
-    // No MCP, no Agent/Task: the film repo has no .mcp.json / .claude/agents.
-    const allow = canEdit
-      ? ["Read", "Grep", "Glob", "Edit", "Write", "Bash", "TodoWrite", "WebSearch", "WebFetch"]
-      : ["Read", "Grep", "Glob", "WebSearch", "WebFetch"];
-    const disallow = canEdit ? DISALLOWED_TOOLS : ["Edit", "Write", "NotebookEdit", "Bash", "Agent", "AskUserQuestion"];
-    return { allow, disallow };
-  }
   const ro = [
     "Read", "Grep", "Glob", "WebSearch", "WebFetch",
     "mcp__atlassian__getJiraIssue",

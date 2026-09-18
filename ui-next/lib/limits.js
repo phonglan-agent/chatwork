@@ -314,7 +314,3 @@ export async function surveyAccounts({ exclude = [], minHeadroom = 3, allowRefre
   return { best: usable[0] || null, rows };
 }
 
-// Account còn dư nhiều nhất (đã trừ `exclude`), hoặc null nếu không có account nào còn dư đáng kể.
-export async function pickAccountWithQuota(opts = {}) {
-  return (await surveyAccounts(opts)).best;
-}

@@ -1,6 +1,6 @@
 // Đọc danh sách + nội dung các phiên chat của Claude CLI cho từng project.
 // Claude lưu mỗi phiên thành 1 file .jsonl trong CLAUDE_CONFIG_DIR/projects/<cwd-encoded>/.
-// Mỗi project (rezil/story/film/free) có cwd riêng → thư mục phiên riêng, nên MỌI hàm ở đây
+// Mỗi project (rezil/free) có cwd riêng → thư mục phiên riêng, nên MỌI hàm ở đây
 // nhận `project` và tự resolve cwd qua resolveProject. Node runtime, chỉ dùng ở server (fs).
 import fs from "node:fs";
 import path from "node:path";

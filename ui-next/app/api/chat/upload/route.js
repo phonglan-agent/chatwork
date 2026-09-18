@@ -1,5 +1,5 @@
 // File upload for the chat console. Saves under .ai-uploads/ inside the chatted project's cwd
-// (rezil | story | film) so the agent — which runs with that cwd — can Read it via a relative path.
+// (rezil | free) so the agent — which runs with that cwd — can Read it via a relative path.
 // Accepts images and Excel, stored verbatim (the agent's Read parses them). See lib/upload.js.
 // Gating is handled by the proxy Basic Auth.
 import { resolveProject, normalizeProject } from "../../../../lib/config.js";

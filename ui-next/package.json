@@ -2,7 +2,7 @@
   "name": "ai-agent-ui-next",
   "version": "0.1.0",
   "private": true,
-  "description": "Next.js UI for the AI agent (REZIL + Story). Backend logic in route handlers; ports ui/server.js incrementally.",
+  "description": "Next.js UI for the AI agent (REZIL). Backend logic in route handlers; ports ui/server.js incrementally.",
   "scripts": {
     "dev": "next dev -p 7000",
     "build": "next build",

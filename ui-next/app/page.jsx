@@ -5,7 +5,6 @@ import ThemeToggle from "./ThemeToggle";
 const ACCENT = {
   blue: { chip: "bg-blue/15 text-blue", dot: "bg-blue", hover: "hover:border-blue/60" },
   purple: { chip: "bg-purple/15 text-purple", dot: "bg-purple", hover: "hover:border-purple/60" },
-  green: { chip: "bg-green/15 text-green", dot: "bg-green", hover: "hover:border-green/60" },
 };
 
 const GROUPS = [
@@ -25,24 +24,6 @@ const GROUPS = [
       { href: "/translate", icon: "🈳", title: "Translate", body: "Đối chiếu Basic Design bản VN ↔ bản JP trên Google Sheet — dịch thiếu, sót tiếng Việt, nghi sai nghĩa" },
       { href: "/evidence", icon: "📸", title: "Evidence", body: "Chụp/gán evidence test case lên Google Sheet SQA — đối chiếu Drive, chụp web mobile, ghi cột Evidence" },
       { href: "/chat?project=rezil", icon: "💬", title: "Chat", body: "Hỏi/sửa code · gõ /usage xem giới hạn" },
-    ],
-  },
-  {
-    name: "Story",
-    accent: "purple",
-    tag: "Laravel · Next · Expo · workers",
-    cards: [
-      { href: "/story", icon: "⚙️", title: "Auto", body: "Task free-form → PR sang develop" },
-      { href: "/chat?project=story", icon: "💬", title: "Chat", body: "Hỏi/sửa repo story · agent tự nạp" },
-    ],
-  },
-  {
-    name: "AI Film Studio",
-    accent: "green",
-    tag: "Next.js 16 · React 19 · Prisma · ComfyUI",
-    cards: [
-      { href: "/film", icon: "🎬", title: "Auto", body: "Task free-form → PR sang develop" },
-      { href: "/chat?project=film", icon: "💬", title: "Chat", body: "Hỏi/sửa repo ai-film-studio" },
     ],
   },
   {

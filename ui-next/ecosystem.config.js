@@ -4,10 +4,9 @@
 //   pm2 logs ai-agent-ui-next
 //   pm2 save && pm2 startup                         # persist across reboots
 //
-// Build before (re)starting:  cd ui-next && npm run build   (bakes NEXT_PUBLIC_BASE_PATH=/ai)
-// Exposing to the internet is NOT done here — a shared gateway handles ngrok for all apps:
-//   ~/IdeaProjects/gateway (1 Caddy + 1 ngrok, routes /ai → this app, /* → elearning, ...).
-// This app only needs to run on PORT; the gateway proxies /ai into it.
+// Build before (re)starting:  cd ui-next && npm run build   (bakes NEXT_PUBLIC_BASE_PATH)
+// Exposing to the internet: app `ai-agent-ngrok` below chạy scripts/ngrok.sh, ngrok trỏ THẲNG vào
+// PORT của app này (app phục vụ ở gốc `/`, NEXT_PUBLIC_BASE_PATH để rỗng).
 // Config in ui-next/.env: PORT, HOSTNAME, NEXT_PUBLIC_BASE_PATH, UI_BASIC_AUTH.
 
 const path = require("path");
@@ -125,6 +124,28 @@ module.exports = {
       env,
       out_file: path.join(__dirname, "logs/telegram-out.log"),
       error_file: path.join(__dirname, "logs/telegram-error.log"),
+      merge_logs: true,
+      time: true,
+    },
+    {
+      // ngrok RIÊNG của project. Script tự chờ app lên
+      // (/api/healthz) rồi mới dựng tunnel, và từ chối chạy nếu UI_BASIC_AUTH trống.
+      // Domain + authtoken đọc từ ui-next/.env → đổi chúng phải restart bằng --fresh.
+      name: "ai-agent-ngrok",
+      script: "./scripts/ngrok.sh",
+      interpreter: "bash",
+      cwd: __dirname,
+      instances: 1,
+      exec_mode: "fork",
+      autorestart: true,
+      watch: false,
+      // Tunnel rớt (mạng chết, endpoint bị agent khác chiếm) → thử lại thưa, không quay vòng liên tục.
+      restart_delay: 10000,
+      min_uptime: 20000,
+      max_restarts: 20,
+      env,
+      out_file: path.join(__dirname, "logs/ngrok-out.log"),
+      error_file: path.join(__dirname, "logs/ngrok-error.log"),
       merge_logs: true,
       time: true,
     },

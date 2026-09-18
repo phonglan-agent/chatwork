@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "AI Agent UI",
-  description: "Hand a ticket/task to Claude — implements → PR. REZIL + Story.",
+  description: "Hand a ticket/task to Claude — implements → PR.",
 };
 
 // Apply saved theme before paint (no flash). Default: dark.

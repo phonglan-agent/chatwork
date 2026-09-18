@@ -1,4 +1,4 @@
-// GET /api/sessions?project=rezil|story|film|free[&console=chat|release|evidence|…]
+// GET /api/sessions?project=rezil|free[&console=chat|release|evidence|…]
 //   — liệt kê các phiên đã lưu của project đó.
 // `console`: tách phiên theo từng màn (nhiều console ghi .jsonl chung một thư mục — xem
 // lib/sessions.js). Thiếu tham số này thì trả hết như trước.

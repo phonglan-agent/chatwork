@@ -111,7 +111,7 @@ Add `--dry-run` to any script to preview the commands without executing.
 | `AGENT_RULES.md`      | Allowed / forbidden actions, failure policy                                             |
 | `TOOLS.md`            | Tools the agent may use                                                                 |
 | `MEMORY.md`           | Index of long-term knowledge in `memory/`                                               |
-| `config/`             | `jira.json`, `github.json`, `project.json`, `story.json`                                |
+| `config/`             | `jira.json`, `github.json`, `project.json`                                              |
 | `prompts/`            | Task prompts: `fix_bug`, `feature_workflow`, `create_pr`, `update_jira`, `transition_assign`, `review_pr` |
 | `memory/`             | `architecture`, `coding_style`, `database`, `deployment`, `common_bugs`, `jira_history` |
 | `scripts/`            | `fix-ticket`, `create-pr`, `update-jira` (+ `_lib` helpers), `share-projects.sh`         |
@@ -126,8 +126,6 @@ Add `--dry-run` to any script to preview the commands without executing.
   base branch `develop`, branch rule, `neverMerge` / `neverForcePush`.
 - **`jira.json`** — site / cloudId / project `REZIL`, plus **`branchTypeByIssueType`** (issue type → branch type).
 - **`project.json`** — product metadata, stack, repo list, DB environments.
-- **`story.json`** — the secondary "story" project the UI can target (path, remote, base branch,
-  branch types) for non-Jira free-form tasks. Used by Auto Story / Chat-Story in `ui-next/`.
 
 All four contain only public identifiers — no secrets.
 
@@ -206,7 +204,7 @@ See `WORKFLOW.md` / `WORKFLOW_FEATURE.md` for the full step lists and `CLAUDE.md
 A browser UI (**Next.js + React + Tailwind**, in `ui-next/`) to hand a ticket/task to Claude, which
 **implements it end-to-end up to creating the PR**. Dark/light theme, responsive, Vietnamese.
 
-Every surface (`/auto`, `/feature`, `/story`, `/chat`, `/release`, `/translate`) is the **same console shell** — a
+Every surface (`/auto`, `/feature`, `/chat`, `/release`, `/translate`) is the **same console shell** — a
 header, a streaming conversation log, and a composer at the bottom. They differ only by what the
 composer collects (ticket+repo / free task / chat input) and whether edits are allowed.
 
@@ -214,7 +212,7 @@ composer collects (ticket+repo / free task / chat input) and whether edits are a
 cd ui-next
 npm install                  # first time
 npm run build && npm run start   # http://127.0.0.1:5000
-# or via pm2:  pm2 start ecosystem.config.js   (chỉ Next app; ngrok do ~/IdeaProjects/gateway lo — xem CADDY.md)
+# or via pm2:  pm2 start ecosystem.config.js   (Next app + bot Telegram + ngrok riêng của project)
 ```
 
 The REZIL coding workflows — pick by task type:
@@ -229,8 +227,6 @@ The REZIL coding workflows — pick by task type:
   artifacts are written to `.ai-agent/generated/` (**git-ignored**, audit trail only); a LIB+BE feature
   may open a PR in **both** `rezil-esms` and `rezil-esms-lib`. It's a **long job** (tens of minutes) and
   shares the per-repo job lock with Auto. See `WORKFLOW_FEATURE.md`.
-- **Auto Story** (`/story`): free-form task → branch `fix|feature/YYYY-MM-<desc>` → PR to `develop`
-  (no Jira; uses the story repo's own agents).
 - **Info gate**: if the ticket/task lacks enough info, Claude stops and prints `⛔ NEED-INFO:`
   (no changes) — the UI shows a banner so you can Cancel.
 - **Concurrency per repo**: one job per repo at a time; a second job on the **same repo** returns `409`.
@@ -270,7 +266,7 @@ Sheets and reports every mismatch, cell by cell, for the BSE to fix. Read-only b
   (Viewer to compare, Editor on the checklist file to write). A 403 stops the agent with that message.
 
 ### Chat (`/chat`)
-A Q&A console — open per project from Home (REZIL → `/chat?project=rezil`, Story → `?project=story`;
+A Q&A console — open per project from Home (REZIL → `/chat?project=rezil`;
 each keeps its own saved conversation + session). Ask about code or tickets, answers stream in
 Vietnamese. Type `/usage` to see token usage + estimated cost. Multi-turn (session resume).
 - **Read-only by default**: Read/Grep code, search the web, read Jira — no edits.

@@ -5,7 +5,6 @@
 // jiraSearchAll → Claude analyses. Multi-turn via --resume so the user can refine across turns.
 import { WORDING_INSTR } from "./claude.js";
 
-export const REPORT_AGENT = "jira-master"; // kept for reference; NOT passed (we force the CLI, not MCP)
 
 // Phân vai member để gom nhóm trong block report Chatwork. Ai KHÔNG thuộc 3 list này → DEV.
 // Tên KHỚP CHÍNH XÁC `assignee.displayName` trên Jira (gồm phần tiếng Nhật).

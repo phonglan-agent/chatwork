@@ -232,7 +232,7 @@ function Lightbox({ src, onClose }) {
 // Shared multi-turn console for every agent UI. Two modes via config.mode:
 //   - "chat" (default): free text input (+ optional ✏️ Sửa code toggle), session resume — /chat, /release.
 //   - "job": page supplies a composer (ticket/repo/task fields) + getSubmission(); one-shot run with
-//     result/NEED-INFO handling + per-repo cancel — /auto, /feature, /story.
+//     result/NEED-INFO handling + per-repo cancel — /auto, /feature.
 // Streaming, message list, status, persistence and the header are shared across both.
 
 // basePath when served behind the reverse proxy (e.g. "/ai"). Next prefixes Link/assets/API routes

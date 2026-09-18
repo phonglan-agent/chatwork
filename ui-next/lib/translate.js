@@ -71,7 +71,6 @@ export const TRANSLATE_PAIRS = {
 // deep link (gid) của từng sheet VN/JP. Quy tắc ghi ở spec §12.
 export const REPORT_SHEET_ID = "1zfkfhP016v4IkaqZ1gXH14OS33buRATvEnTdcQn33PI";
 export const REPORT_TAB = "ChecklistAI";
-export const REPORT_SOURCE_TAB = "Checklist";
 
 // Trạng thái "tab nào đã soát" — file JSON local, ghi/đọc qua script (Write/Edit bị chặn ở console
 // này nên script là đường ghi duy nhất). Xem spec §13.

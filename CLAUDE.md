@@ -66,7 +66,6 @@ ai-agent/
 │   ├── jira.json
 │   ├── github.json
 │   ├── project.json
-│   └── story.json        # secondary "story" project for Auto/Chat (non-Jira)
 │
 ├── memory/
 │   ├── architecture.md
@@ -89,7 +88,7 @@ ai-agent/
 │   └── commit_message.md
 │
 └── ui-next/               # Next.js (App Router + React + Tailwind) web UI — port 5000, ngrok, Basic Auth
-    ├── app/               # pages (auto REZIL/Feature/Story, release, chat, /kloc, /translate, /usage)
+    ├── app/               # pages (auto REZIL/Feature, release, chat, /kloc, /translate, /usage)
     │                      #   + api route handlers (SSE)
     │                      #   /kloc: đọc PR merge 4 repo rezil → append LoC vào Sheet KLoC-MVP2
     │                      #   (spec app/kloc/KLOC_SPEC.md đọc lúc chạy, không cần build)
@@ -98,7 +97,7 @@ ai-agent/
     │                      #   ChecklistAI khi được yêu cầu (spec app/translate/TRANSLATE_SPEC.md,
     │                      #   đọc lúc chạy, không cần build); tab đã soát nhớ trong
     │                      #   data/translate-scan-state.json qua scripts/translate-state.mjs
-    ├── lib/               # config / claude SSE / auto+feature+story+release prompts / usage / limits / job-lock
+    ├── lib/               # config / claude SSE / auto+feature+release prompts / usage / limits / job-lock
     │                      #   + accountSwitch.js: chat tự đổi account Claude khi hết quota (xem §Nhiều account)
     ├── proxy.js           # HTTP Basic Auth (UI_BASIC_AUTH) — Next "proxy" convention
     ├── telegram-bot.mjs   # bot Telegram chạy TIẾN TRÌNH RIÊNG (pm2 app ai-agent-telegram)
@@ -106,8 +105,10 @@ ai-agent/
     │                          #   /evidence KHÔNG được Read file .png, xem README §/evidence
     ├── scripts/pm2-restart.sh # restart pm2 an toàn từ trong chính app (setsid + bậc thang tự chữa
     │                          #   + --fresh nạp lại .env, tự xoá CLAUDE_* rò từ phiên gọi lệnh)
-    ├── ecosystem.config.js# pm2: ai-agent-ui-next + ai-agent-telegram (ngrok do ~/IdeaProjects/gateway lo)
-    ├── .env               # UI config: UI_BASIC_AUTH + PORT/HOSTNAME/NGROK_DOMAIN (pm2); npm scripts dùng -p 5000
+    ├── ecosystem.config.js# pm2: ai-agent-ui-next + ai-agent-telegram + ai-agent-ngrok (tunnel riêng)
+    ├── scripts/ngrok.sh   # ngrok riêng của project, trỏ thẳng vào PORT (phục vụ ở gốc /,
+    │                      #   NEXT_PUBLIC_BASE_PATH rỗng) — xem README §Expose ra ngoài
+    ├── .env               # UI config: UI_BASIC_AUTH + PORT/HOSTNAME/NGROK_* (pm2); npm scripts dùng -p 5000
     └── .env.example
 ```
 

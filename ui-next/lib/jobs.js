@@ -1,5 +1,5 @@
 // Per-repo job lock, shared across route handlers. At most one auto job per repo
-// (key = repo name, or "story"). globalThis keeps the Map alive across dev HMR reloads.
+// (key = repo name). globalThis keeps the Map alive across dev HMR reloads.
 const g = globalThis;
 if (!g.__aiRunningJobs) g.__aiRunningJobs = new Map(); // key -> { child, label }
 export const running = g.__aiRunningJobs;

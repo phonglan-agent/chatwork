@@ -17,30 +17,6 @@ const PROJECTS = {
       "/usage",
     ],
   },
-  story: {
-    accent: "purple",
-    badge: "Story",
-    emptyText: "Hỏi/sửa repo story — Read/Grep code, query postgres, web. Bật ✏️ để cho sửa file.",
-    placeholder: "Hỏi gì đó về story… (gõ /usage để xem giới hạn)",
-    examples: [
-      "Cấu trúc repo story gồm những layer nào?",
-      "Tìm worker xử lý ảnh truyện",
-      "Giải thích flow đọc truyện ở Next.js app",
-      "/usage",
-    ],
-  },
-  film: {
-    accent: "green",
-    badge: "AI Film Studio",
-    emptyText: "Hỏi/sửa repo ai-film-studio — Read/Grep code, web. Bật ✏️ để cho sửa file + chạy build/test.",
-    placeholder: "Hỏi gì đó về ai-film-studio… (gõ /usage để xem giới hạn)",
-    examples: [
-      "Cấu trúc repo ai-film-studio gồm những layer nào?",
-      "Flow tạo Job render rồi worker xử lý chạy thế nào?",
-      "lib/engine.ts chọn endpoint ComfyUI ra sao?",
-      "/usage",
-    ],
-  },
   // Unrestricted, all-projects mode: cwd = ~/IdeaProjects, no tool filters, bypassPermissions.
   // Always full-capability → no ✏️ toggle (see editToggle below).
   free: {
@@ -50,7 +26,7 @@ const PROJECTS = {
     placeholder: "Yêu cầu gì cũng được, trên project nào cũng được… (gõ /usage để xem giới hạn)",
     examples: [
       "Liệt kê các project trong ~/IdeaProjects",
-      "So sánh cách xử lý auth giữa rezil-esms và story",
+      "So sánh cách xử lý auth giữa các repo rezil-esms",
       "Chạy git status ở tất cả repo và tóm tắt",
       "/usage",
     ],

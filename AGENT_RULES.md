@@ -79,7 +79,7 @@ nhất vì build/test/typecheck vẫn pass. Rule dưới đây rút từ case đ
 - [ ] Liệt kê các luồng lân cận đã test lại (regression tối thiểu)
 
 > Prompt tương ứng cho agent: `NO_DEGRADE_SAFETY` trong `ui-next/lib/claude.js`, được nạp vào mọi flow
-> có quyền sửa code (auto REZIL/feature/story/film, chat chế độ sửa code, rebase console, release console).
+> có quyền sửa code (auto REZIL/feature, chat chế độ sửa code, rebase console, release console).
 
 ## Rebase & tích hợp code (rezil-esms / rezil-esms-lib / rezil-esms-mobile / rezil-esms-portal)
 

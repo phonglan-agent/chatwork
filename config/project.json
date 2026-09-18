@@ -3,7 +3,7 @@
   "jiraProject": "REZIL",
   "description": "Energy/Site Management System — full-stack monorepos (Scala + Svelte)",
   "stack": ["Scala", "Svelte", "TypeScript", "MySQL"],
-  "repos": ["rezil-esms", "rezil-esms-lib", "rezil-esms-mobile"],
+  "repos": ["rezil-esms", "rezil-esms-lib", "rezil-esms-mobile", "rezil-esms-portal"],
   "defaultRepo": "rezil-esms",
   "mainBranch": "develop",
   "environments": {

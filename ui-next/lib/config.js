@@ -6,7 +6,7 @@ import os from "os";
 
 export const ROOT = path.resolve(process.cwd(), "..");
 
-// Where the sibling project repos (rezil-esms*, story, ai-film-studio…) live. Defaults to the parent
+// Where the sibling project repos (rezil-esms*…) live. Defaults to the parent
 // of this repo (they're checked out side-by-side); override with REZIL_ROOT to relocate on another
 // machine WITHOUT editing config/*.json. Config files store repo paths as bare folder names relative
 // to this; absolute paths in config are honored as-is (loadConfig resolves them — see below).
@@ -101,11 +101,9 @@ export function listRepos() {
 }
 
 // Single-repo projects driven by a config/<key>.json (own CLAUDE.md/.claude auto-loaded by cwd).
-// Adding another such project is a one-entry change here + its config/<key>.json.
-export const SIMPLE_PROJECTS = {
-  story: { label: "Story" },
-  film: { label: "AI Film Studio" },
-};
+// Adding one is a one-entry change here + its config/<key>.json (+ an entry in Chat.jsx's PROJECTS
+// and, if it needs its own prompt/tools, a branch in lib/claude.js). Currently none.
+export const SIMPLE_PROJECTS = {};
 
 // Normalize an arbitrary project param to a known key; anything unknown → "rezil".
 // "free" is the unrestricted, all-projects mode (see resolveProject) — kept explicit here so it
@@ -114,7 +112,7 @@ export function normalizeProject(p) {
   return p === "rezil" || p === "free" || SIMPLE_PROJECTS[p] ? p : "rezil";
 }
 
-// Resolve a "project" (rezil | story | film | …) into the bits a run/chat needs.
+// Resolve a "project" (rezil | free | …) into the bits a run/chat needs.
 // Keeping this in one place is what makes adding another project a one-entry change.
 export function resolveProject(project) {
   // "free" = unrestricted, all-projects mode: cwd is the workspace root (~/IdeaProjects by default,

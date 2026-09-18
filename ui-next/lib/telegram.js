@@ -7,7 +7,7 @@
 //   TELEGRAM_BOT_TOKEN            bot token from @BotFather (required to enable)
 //   TELEGRAM_ALLOWED_CHAT_IDS     comma-separated chat ids allowed to use the bot (empty = reply
 //                                 with the caller's id so they can whitelist themselves, no run)
-//   TELEGRAM_PROJECT              rezil | story | film | free  (default: rezil)
+//   TELEGRAM_PROJECT              rezil | free  (default: rezil)
 //   TELEGRAM_CAN_EDIT             "1" to allow Edit/Write/Bash (default: read-only)
 //   TELEGRAM_TIMEOUT_MS           hard cap per message run in ms (default: 600000 = 10 min)
 import { spawn } from "child_process";

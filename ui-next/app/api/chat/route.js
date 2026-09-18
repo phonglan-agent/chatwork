@@ -1,4 +1,4 @@
-// SSE chat endpoint (EventSource → GET). Project-aware (rezil | story), read-only or edit.
+// SSE chat endpoint (EventSource → GET). Project-aware (rezil | free), read-only or edit.
 // Handles the server-side /usage slash-command without spawning claude.
 import { buildChatArgv, claudeSSE, cleanSessionId, resolveProject, normalizeProject } from "../../../lib/claude.js";
 import { maybeSlashResponse } from "../../../lib/slashCommands.js";
