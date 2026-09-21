@@ -1,5 +1,8 @@
-// Investigate console (REZIL): "điều tra ticket" — CHỈ ĐỌC, trừ một đường ghi duy nhất: sheet
-// degrade của team (xem DEGRADE_SHEET + mục SHEET DEGRADE trong prompt). Nhãn `Nguyên nhân` ra
+// Investigate console (REZIL): "điều tra ticket" — CHỈ ĐỌC, trừ HAI đường ghi Google Sheet, cả hai
+// đều chỉ chạy sau khi user xác nhận ở lượt sau:
+//   1) sheet degrade của team (DEGRADE_SHEET + mục SHEET DEGRADE trong prompt);
+//   2) 5 cột kết luận trên sheet chất lượng của PM (QUALITY_SHEET + mục GHI SHEET CHẤT LƯỢNG).
+// Nhãn `Nguyên nhân` ra
 // `Degrade` → lượt kết luận CHỈ gợi ý "Lập sheet degrade cho REZIL-XXXX"; user xác nhận thì lượt
 // sau mới copy tab `Template V1` thành tab REZIL-XXXX và điền Q&A/Summary/Solution.
 // Luồng: user đưa REZIL-XXXX (hoặc mô tả lỗi) → agent đọc ticket (MCP), trace code trong 4 repo
@@ -40,8 +43,9 @@ export const INVESTIGATE_ALLOWED = [
   "mcp__atlassian__getJiraIssueRemoteIssueLinks",
   "mcp__atlassian__fetch",
   "mcp__mysql_207__mysql_query",
-  // NGOẠI LỆ DUY NHẤT của "read-only": lập sheet Degrade Investigation Ticket (xem DEGRADE_SHEET).
-  // Chỉ ghi vào ĐÚNG một spreadsheet, chỉ sau khi user xác nhận — system prompt là phanh chính.
+  // NGOẠI LỆ của "read-only": lập sheet Degrade Investigation Ticket (DEGRADE_SHEET) và điền 5 cột
+  // kết luận vào sheet chất lượng của PM (QUALITY_SHEET). Chỉ ghi vào ĐÚNG hai spreadsheet đó, chỉ
+  // sau khi user xác nhận — system prompt là phanh chính (tool không phân biệt được spreadsheet nào).
   "mcp__gsheets-rezil__list_sheets",
   "mcp__gsheets-rezil__get_sheet_data",
   "mcp__gsheets-rezil__find_in_spreadsheet",
@@ -102,8 +106,9 @@ export const INVESTIGATE_DISALLOWED = [
   "mcp__atlassian__updateConfluencePage",
   "mcp__atlassian__createConfluenceFooterComment",
   "mcp__atlassian__createConfluenceInlineComment",
-  // Google Sheets: chỉ mở đúng bộ tool cần cho sheet degrade (xem INVESTIGATE_ALLOWED). Chặn thêm
-  // ở đây cho chắc — create/share tạo file mới, add_rows/columns đổi khung bảng của template.
+  // Google Sheets: chỉ mở đúng bộ tool cần cho 2 sheet trên (xem INVESTIGATE_ALLOWED). Chặn thêm
+  // ở đây cho chắc — create/share tạo file mới, add_rows/columns đổi khung bảng của template và của
+  // sheet chất lượng (ticket chưa có dòng thì BÁO LẠI, không tự thêm dòng).
   "mcp__gsheets-rezil__create_spreadsheet",
   "mcp__gsheets-rezil__create_sheet",
   "mcp__gsheets-rezil__share_spreadsheet",
@@ -154,24 +159,81 @@ export const CAUSE_OPTIONS = [
   ["Đánh giá ảnh hưởng thiếu", "sửa chỗ A làm hỏng chỗ B vì không rà hết phạm vi ảnh hưởng"],
 ];
 
-// Sheet chất lượng của PM (export TSV) đặt ở repo ai-agent (ROOT). Đây là NGUỒN CHUẨN của 5 cột +
-// cách team thực sự điền: agent grep file này để xem bug tương tự trước đây phân loại ra sao.
-// Không có file (máy khác chưa export) → bỏ qua, prompt tự lược phần này.
+// Sheet chất lượng của PM ("REZIL - PM Quality Management", tab `Investigation`): mỗi bug một dòng,
+// NGUỒN CHUẨN của 5 cột. Vừa là tham chiếu (tra tiền lệ phân loại) vừa là ĐÍCH GHI thứ hai của màn
+// này — chỉ 5 ô kết luận trên dòng của ticket, chỉ sau khi user xác nhận (xem qualityWriteLines).
+// Đổi file thì sửa Ở ĐÂY, prompt tự cập nhật theo.
+export const QUALITY_SHEET = {
+  id: "16Pt75CCVBaEkaEL8n_CayJ6dip_hswaXiuZPd5wqvjg",
+  tab: "Investigation",
+  gid: "467057018",
+  url: "https://docs.google.com/spreadsheets/d/16Pt75CCVBaEkaEL8n_CayJ6dip_hswaXiuZPd5wqvjg/edit?gid=467057018",
+};
+
+// Bản export TSV của chính tab trên, đặt ở repo ai-agent (ROOT) — tra tiền lệ bằng grep thì rẻ hơn
+// gọi API. Không có file (máy khác chưa export) → bỏ qua, prompt tự lược phần này và tra thẳng sheet.
 export const QUALITY_SHEET_TSV = path.join(ROOT, "REZIL - PM Quality Management - Investigation.tsv");
 
 function qualitySheetLines() {
-  if (!fs.existsSync(QUALITY_SHEET_TSV)) return [];
-  return [
-    "## THAM CHIẾU SHEET CHẤT LƯỢNG THẬT (nguồn chuẩn của 5 cột)",
-    `File TSV: \`${QUALITY_SHEET_TSV}\` (tên có dấu cách — LUÔN bọc nháy kép khi dùng trong Bash).`,
-    "Cột (1-indexed, phân tách bằng TAB): 3=Type · 5=Sprint · 6=Ticket Jira · 7=Feature/màn · 8=Bug Description",
-    "· 9=Loại (nhãn) · 12=Nguyên nhân (nhãn) · 14=DEV tự đánh giá · 15=SQA đánh giá",
-    "· 16=Phương án khắc phục lần tới · 17=AI Check Result · 18=AI Check Detail.",
-    "TRƯỚC KHI CHỐT nhãn, tra tiền lệ (rẻ, chỉ 1 lệnh) — bug cùng màn/cùng kiểu trước đây điền gì:",
-    `  grep -P "\\t(<SCREEN-CODE>|<REZIL-XXXX>)\\t" "${QUALITY_SHEET_TSV}" | cut -f7,8,9,12,14,15,16`,
+  const { id, tab, url } = QUALITY_SHEET;
+  const lines = [
+    "## SHEET CHẤT LƯỢNG THẬT (nguồn chuẩn của 5 cột)",
+    `Google Sheet "REZIL - PM Quality Management" — tab \`${tab}\`, spreadsheet ID \`${id}\` (${url}).`,
+    "Header ở DÒNG 2, dữ liệu từ DÒNG 3. Cột: B=No · C=Type · D=Created Date · E=Sprint · F=Ticket Jira ·",
+    "G=Feature/màn · H=Bug Description · I=Loại (nhãn) · J=PIC DEV · K=PIC UT · L=Nguyên nhân (nhãn) ·",
+    "M=UT/IT Test case row · N=DEV tự đánh giá · O=SQA đánh giá · P=Phương án khắc phục lần tới ·",
+    "Q=AI Check Result · R=AI Check Detail · S=Kết luận của PM (Q/R/S là cột của PM).",
+    "TRƯỚC KHI CHỐT nhãn, tra tiền lệ — bug cùng màn/cùng kiểu trước đây điền gì:",
+    `  \`mcp__gsheets-rezil__find_in_spreadsheet\` (query = ScreenCode hoặc mã ticket) rồi \`get_sheet_data\``,
+    `  range \`${tab}!B<row>:P<row>\` cho đúng vài dòng tìm được — KHÔNG đọc cả tab (rất tốn token).`,
     "Có tiền lệ rõ ràng → bám theo cách phân loại đó cho nhất quán. Không có → theo bằng chứng của bạn.",
     "Đây là THAM CHIẾU, không phải khuôn để copy: tuyệt đối không bê nguyên câu đánh giá/phương án của",
     "ticket khác sang, phải viết đúng theo bằng chứng của ticket đang điều tra.",
+  ];
+  if (fs.existsSync(QUALITY_SHEET_TSV)) {
+    lines.push(
+      `Có sẵn bản export TSV của tab này: \`${QUALITY_SHEET_TSV}\` (tên có dấu cách — LUÔN bọc nháy kép`,
+      "trong Bash). Cột 1-indexed phân tách bằng TAB, lệch 1 so với chữ cái cột (2=No … 9=Loại, 12=Nguyên nhân,",
+      "14=DEV tự đánh giá, 15=SQA đánh giá, 16=Phương án). Tra tiền lệ bằng grep thì rẻ hơn gọi API:",
+      `  grep -P "\\t(<SCREEN-CODE>|<REZIL-XXXX>)\\t" "${QUALITY_SHEET_TSV}" | cut -f7,8,9,12,14,15,16`,
+      "Số dòng trong TSV KHÔNG dùng để ghi sheet — vị trí dòng phải lấy từ sheet thật.",
+    );
+  }
+  lines.push("");
+  return lines;
+}
+
+// Mục hướng dẫn GHI 5 cột kết luận vào sheet chất lượng. Chỉ chạy khi user bảo ghi ở lượt sau.
+function qualityWriteLines() {
+  const { id, tab, url } = QUALITY_SHEET;
+  return [
+    "## GHI SHEET CHẤT LƯỢNG (chỉ khi user bảo ghi)",
+    `Kết quả điều tra được phép ghi thẳng vào tab \`${tab}\` của sheet chất lượng (ID \`${id}\`, ${url}).`,
+    "Đây là ngoại lệ thứ hai của nguyên tắc chỉ-đọc, và cũng có 2 bước TÁCH RỜI:",
+    "1) LƯỢT KẾT LUẬN: chỉ in bảng 5 cột như thường, TUYỆT ĐỐI KHÔNG ghi sheet. Chỉ thêm vào khối",
+    "   `<<<SUGGEST>>>` một dòng đúng dạng `- Ghi kết quả vào sheet chất lượng cho REZIL-XXXX`.",
+    "2) LƯỢT SAU, khi user bảo ghi → mới ghi. Không ai nhắc thì KHÔNG ghi.",
+    "",
+    "### Cách ghi",
+    `- TÌM DÒNG: \`find_in_spreadsheet\` với query = mã ticket (vd \`REZIL-2974\`), đối chiếu cột F (Ticket Jira)`,
+    `  của tab \`${tab}\`. Cần chắc chắn thì đọc lại \`get_sheet_data\` range \`${tab}!F<row>\` xem đúng mã ticket.`,
+    "- Khớp ĐÚNG 1 dòng → ghi vào dòng đó. Khớp NHIỀU dòng → KHÔNG ghi, liệt kê các số dòng + mô tả bug của",
+    "  từng dòng để user chọn. KHÔNG khớp dòng nào → KHÔNG ghi và KHÔNG tự thêm dòng mới (tool thêm dòng đã bị",
+    `  chặn), báo lại đúng một dòng: \`Chưa có dòng REZIL-XXXX trong tab ${tab}\`.`,
+    "- Chỉ ghi ĐÚNG 5 ô trên dòng đó, gộp một lần bằng `batch_update_cells`:",
+    "  `I<row>` = Loại (nhãn) · `L<row>` = Nguyên nhân (nhãn) · `N<row>` = DEV tự đánh giá ·",
+    "  `O<row>` = SQA đánh giá · `P<row>` = Phương án khắc phục lần tới.",
+    "- TUYỆT ĐỐI không đụng ô nào khác: không cột B–H, J, K, M (dữ liệu do PM/QA nhập), không Q/R/S (cột",
+    `  đánh giá của PM), không dòng khác, không tab \`Summary\`/\`QualityTarget\`/\`Metadata\`, không spreadsheet khác.`,
+    `- KHÔNG GHI ĐÈ dữ liệu người khác: trước khi ghi, đọc \`get_sheet_data\` range \`${tab}!I<row>:P<row>\`.`,
+    "  Ô nào ĐÃ có nội dung thì GIỮ NGUYÊN, chỉ điền ô đang rỗng — trừ khi user nói rõ là ghi đè.",
+    "- Nội dung 5 ô lấy ĐÚNG bảng 5 cột đã chốt ở lượt trước (nhãn nguyên văn, 3 cột còn lại là văn xuôi ngôn",
+    "  ngữ thường, không file:line/commit/SQL). Không viết lại khác đi, không rút gọn, không bịa thêm.",
+    "- Nhiều ticket → xử lý lần lượt từng ticket theo đúng luật trên, mỗi ticket một dòng riêng.",
+    "",
+    `Xong việc, trả về ĐÚNG 2 dòng: \`Đã ghi dòng <row> (REZIL-XXXX): ${url}\` và một dòng liệt kê ô bị bỏ`,
+    "qua vì đã có sẵn nội dung (không có ô nào thì ghi `Không có ô nào bị bỏ qua.`).",
+    "Ghi lỗi giữa đường → nói rõ đã ghi tới ô nào, KHÔNG thử lại quá 1 lần.",
     "",
   ];
 }
@@ -355,6 +417,7 @@ export function investigateSystemPrompt(nowStamp) {
     "- Xin cách fix bug đang có → bảng `| # | Phương án | Sửa ở đâu | Rủi ro | Effort | Migration? |` + 1 dòng khuyến nghị.",
     "- Xin bản dán Jira → khối ``` theo mục LƯỢT SAU.",
     "- Bảo lập/điền sheet degrade → làm theo mục SHEET DEGRADE, trả về đúng 2 dòng như mục đó quy định.",
+    "- Bảo ghi kết quả vào sheet chất lượng → làm theo mục GHI SHEET CHẤT LƯỢNG, trả về đúng 2 dòng như mục đó quy định.",
     "",
     ...qualitySheetLines(),
     "## BẢNG LOẠI BUG (cột `Loại` — BẮT BUỘC chọn ĐÚNG 1)",
@@ -430,6 +493,7 @@ export function investigateSystemPrompt(nowStamp) {
     "- Dev code đúng BD nhưng UT không phủ case → `UT Test thiếu`. Cả dev lẫn test cùng sót → `Dev + Test thiếu`.",
     "",
     ...degradeSheetLines(),
+    ...qualityWriteLines(),
     "## NHIỀU TICKET → CHẠY SONG SONG (fan-out)",
     "Người dùng đưa TỪ 2 TICKET TRỞ LÊN trong một lượt (vd `REZIL-2352, REZIL-2400, REZIL-2411` hoặc mỗi",
     "ticket một dòng) → KHÔNG điều tra tuần tự. Với MỖI ticket spawn 1 subagent (tool Agent,",
@@ -442,7 +506,7 @@ export function investigateSystemPrompt(nowStamp) {
     "- Đường dẫn 4 repo rezil + nhắc `cd` vào repo đích trước khi grep.",
     "- RÀNG BUỘC CHỈ ĐỌC: cấm Edit/Write, cấm `git commit/push/switch/checkout/merge/rebase/reset`, cấm tạo/sửa PR,",
     "  cấm ghi Jira, DB chỉ `SELECT` có `LIMIT`. Subagent KHÔNG được spawn subagent tiếp.",
-    "  Cấm luôn ghi Google Sheet: sheet degrade CHỈ do agent chính lập, và chỉ khi user xác nhận.",
+    "  Cấm luôn ghi Google Sheet: sheet degrade và sheet chất lượng CHỈ do agent chính ghi, và chỉ khi user xác nhận.",
     "- NGUYÊN VĂN 8 nhãn của bảng LOẠI BUG + luật chọn đúng 1 nhãn cho cột `Loại` (Responsive ưu tiên hơn UI;",
     "  lỗi ở thành phần dùng chung = Bug common; Won't fix/Canceled chỉ khi ticket ghi rõ team đã quyết).",
     "- NGUYÊN VĂN 13 nhãn của bảng phân loại + luật chọn đúng 1 nhãn CHỈ cho cột `Nguyên nhân`, kèm các lỗi",
@@ -473,8 +537,12 @@ export function investigateSystemPrompt(nowStamp) {
     "## GIỚI HẠN CỨNG",
     "Không Edit/Write bất kỳ file nào. Không `git commit/push/switch/checkout/merge/rebase/reset`, không",
     "tạo/sửa/merge PR, không deploy, không đụng secret/CI. Không comment/transition/edit Jira. DB chỉ SELECT.",
-    `Đường GHI duy nhất được phép: spreadsheet degrade \`${DEGRADE_SHEET.id}\` — chỉ tab của ticket đang`,
-    `điều tra, chỉ sau khi user xác nhận (mục SHEET DEGRADE). Không ghi spreadsheet nào khác, không sửa tab \`${DEGRADE_SHEET.template}\`.`,
+    "Chỉ có ĐÚNG HAI đường ghi được phép, cả hai đều phải user xác nhận ở lượt sau:",
+    `1) Spreadsheet degrade \`${DEGRADE_SHEET.id}\` — chỉ tab của ticket đang điều tra (mục SHEET DEGRADE).`,
+    `   Không sửa tab \`${DEGRADE_SHEET.template}\`, không sửa tab của ticket khác.`,
+    `2) Spreadsheet chất lượng \`${QUALITY_SHEET.id}\`, tab \`${QUALITY_SHEET.tab}\` — chỉ 5 ô \`I/L/N/O/P\` trên`,
+    "   ĐÚNG dòng của ticket đang điều tra (mục GHI SHEET CHẤT LƯỢNG). Không thêm dòng, không đụng cột khác.",
+    "Không ghi spreadsheet nào khác.",
     "Subagent CHỈ được dùng để chạy song song nhiều ticket (xem mục NHIỀU TICKET) — không dùng vào việc khác.",
     "Phi tương tác: KHÔNG hỏi lại rồi ngồi đợi giữa lượt — nêu rõ giả định và đi tiếp, chỗ cần user quyết",
     "thì ghi `(cần confirm: ...)` ngay trong ô Nguyên nhân.",
@@ -493,7 +561,8 @@ export function investigateSystemPrompt(nowStamp) {
     "",
     "Kết thúc MỖI lượt bằng khối gợi ý, định dạng CHÍNH XÁC: một dòng `<<<SUGGEST>>>` rồi 2–3 dòng, mỗi",
     "dòng `- <gợi ý ngắn bấm để hỏi tiếp>` (vd: xem kỹ commit nghi vấn, check data ở QA, xin bản dán Jira).",
-    "Nhãn `Nguyên nhân` ra `Degrade` thì một trong các dòng đó PHẢI là `- Lập sheet degrade cho REZIL-XXXX`.",
+    "Lượt vừa xuất bảng 5 cột thì một trong các dòng đó PHẢI là `- Ghi kết quả vào sheet chất lượng cho REZIL-XXXX`.",
+    "Nhãn `Nguyên nhân` ra `Degrade` thì thêm một dòng nữa PHẢI là `- Lập sheet degrade cho REZIL-XXXX`.",
     "Tiếng Việt, không viết gì sau khối này.",
   ].join("\n");
 }
