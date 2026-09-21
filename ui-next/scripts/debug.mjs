@@ -197,6 +197,37 @@ const LOGIN_PRESETS = {
     // match. Nút ログイン là ion-button.btn-primary; loại .sso__button (đăng nhập Microsoft Entra ID).
     submitSel: ["ion-button.btn-primary:not(.sso__button)", "button[type=submit]:not([style*='display: none'])"],
   },
+  // rezil-esms-portal (portal khách hàng, SvelteKit) — form /login, cùng selector với admin web nhưng
+  // credential riêng: account là customer_account, mật khẩu KHÁC account admin (login 400 nếu dùng sai file).
+  "rezil-portal": {
+    envFile: "~/.claude/projects/-home-nghiadv-IdeaProjects-rezil-esms/credentials/rezil-esms-portal.env",
+    userKey: "REZIL_PORTAL_TEST_EMAIL",
+    passKey: "REZIL_PORTAL_TEST_PASSWORD",
+    userSel: "input[name=email]",
+    passSel: "input[name=password]",
+    submitSel: ["button[type=submit]"],
+  },
+  // rezil-esms-portal, account thứ 3 (REZIL_PORTAL_TEST_EMAIL3) — account mới, Cognito đang ở
+  // FORCE_CHANGE_PASSWORD nên sau khi login sẽ ra màn đặt mật khẩu mới (challenge
+  // NEW_PASSWORD_REQUIRED). Mật khẩu mới truyền qua step `type:...::env:REZIL_PORTAL_NEW_PASSWORD`.
+  "rezil-portal3": {
+    envFile: "~/.claude/projects/-home-nghiadv-IdeaProjects-rezil-esms/credentials/rezil-esms-portal.env",
+    userKey: "REZIL_PORTAL_TEST_EMAIL3",
+    passKey: "REZIL_PORTAL_TEST_PASSWORD3",
+    userSel: "input[name=email]",
+    passSel: "input[name=password]",
+    submitSel: ["button[type=submit]"],
+  },
+  // rezil-esms-portal, account thứ 2 (REZIL_PORTAL_TEST_EMAIL2) — dùng cho account 1-row profile
+  // chưa đủ (server trả nextStep=COMPLETE_PROFILE), luồng khác account mặc định.
+  "rezil-portal2": {
+    envFile: "~/.claude/projects/-home-nghiadv-IdeaProjects-rezil-esms/credentials/rezil-esms-portal.env",
+    userKey: "REZIL_PORTAL_TEST_EMAIL2",
+    passKey: "REZIL_PORTAL_TEST_PASSWORD2",
+    userSel: "input[name=email]",
+    passSel: "input[name=password]",
+    submitSel: ["button[type=submit]"],
+  },
   // rezil-esms (admin web, SvelteKit, cổng dev 3000) — form メールアドレス/パスワード của /admin/login.
   "rezil-admin": {
     envFile: "~/.claude/projects/-home-nghiadv-IdeaProjects-rezil-esms/credentials/rezil-esms-test.env",
@@ -247,8 +278,12 @@ if (profileDir) mkdirSync(profileDir, { recursive: true });
 // Chrome giữ SingletonLock trên user-data-dir: một tiến trình còn sống (cửa sổ login chưa đóng, lần
 // chạy trước bị treo) làm mọi lần sau chết với "Failed to create a ProcessSingleton" và script chỉ
 // thấy trang rỗng. Cách xử lý lấy từ scripts/capture-ci-evidence.sh.
+// Khớp CHÍNH XÁC thư mục profile: `-f` so trên cả dòng lệnh, nên pattern trần `.../rezil` còn trúng
+// `.../rezil-admin` (profile khác) → báo bận nhầm, và pkill bên dưới thì giết nhầm Chrome của profile đó.
+const profilePattern = () =>
+  `user-data-dir=${profileDir.replace(/[.[\]{}()*+?^$|\\]/g, "\\$&")}( |$)`;
 const profileBusy = () =>
-  !!profileDir && spawnSync("pgrep", ["-f", `user-data-dir=${profileDir}`]).status === 0;
+  !!profileDir && spawnSync("pgrep", ["-f", profilePattern()]).status === 0;
 function clearSingletonLocks() {
   for (const f of ["SingletonLock", "SingletonSocket", "SingletonCookie"]) {
     rmSync(path.join(profileDir, f), { force: true });
@@ -334,7 +369,7 @@ if (wantProfileLogin) {
   spawnSync(chromeBin(), [`--user-data-dir=${profileDir}`, "--no-first-run", "--no-default-browser-check", "--new-window", url], {
     stdio: "ignore",
   });
-  spawnSync("pkill", ["-f", `user-data-dir=${profileDir}`]);
+  spawnSync("pkill", ["-f", profilePattern()]);
   await new Promise((r) => setTimeout(r, 1000));
   clearSingletonLocks();
   console.error("Đã đóng cửa sổ đăng nhập, tiếp tục chạy headless.");
