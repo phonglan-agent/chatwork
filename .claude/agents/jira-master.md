@@ -42,6 +42,7 @@ Sau khi đọc ticket, nếu nội dung yêu cầu dev action (fix bug, implemen
 4. Transition: gọi `getTransitionsForJiraIssue` trước lấy ID hợp lệ, không hardcode.
 5. Comment: tiếng Việt phong cách team — `PR: <link>` + `Phạm vi ảnh hưởng: ...` (CHỈ 2 dòng, xem rule jira-writer).
 6. Action ghi: confirm với caller trước, trừ khi đã ra lệnh rõ.
+7. Comment Jira / feedback tự do gửi 1 người (ngoài template cố định): xưng hô theo cột *Xưng hô* ở `prompts/transition_assign.md` §Members (VD MinhLK → gọi "anh", xưng "em"); ô `—` = chưa khai → không đoán, viết trung tính.
 
 ## JQL patterns
 - Assign tôi chưa done: `assignee = currentUser() AND statusCategory != Done ORDER BY priority DESC, updated DESC`
