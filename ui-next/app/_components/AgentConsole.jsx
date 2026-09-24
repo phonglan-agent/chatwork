@@ -275,6 +275,23 @@ function relTime(ms) {
   return new Date(ms).toLocaleDateString("vi-VN");
 }
 
+// Tên phiên hiện trên header + tab trình duyệt — cùng quy tắc với tiêu đề trong "Phiên đã lưu"
+// (lib/sessions.js: câu hỏi đầu tiên của người dùng), để chat dài vẫn nhớ đang làm việc gì. Bỏ qua
+// lệnh nhanh (/help, /usage…) vì chúng không phải nội dung phiên. `ticket` = mã Jira đầu tiên xuất
+// hiện trong các câu hỏi (vd REZIL-1234), hiện nổi bật riêng.
+const TICKET_RE = /\b[A-Z][A-Z0-9]+-\d+\b/;
+function sessionHeading(messages) {
+  const mine = messages.filter((m) => m.role === "me" && m.text && !m.text.trim().startsWith("/"));
+  if (!mine.length) return null;
+  const title = mine[0].text.trim().split("\n")[0].slice(0, 120);
+  let ticket = "";
+  for (const m of mine) {
+    const hit = m.text.match(TICKET_RE);
+    if (hit) { ticket = hit[0]; break; }
+  }
+  return { title, ticket };
+}
+
 // Field styles for job composers, so every page's inputs look identical.
 export const LABEL = "mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted";
 export const FIELD_BASE = "w-full rounded-lg border border-fieldline bg-field px-3 text-ink outline-none transition-colors";
@@ -329,6 +346,16 @@ export default function AgentConsole({ config }) {
   const soundedRef = useRef(false);
 
   useEffect(() => { messagesRef.current = messages; }, [messages]);
+
+  // Tên phiên (chỉ console có "Phiên đã lưu") → header + document.title; hết phiên thì trả title gốc.
+  const heading = !isJob && config.sessionsPath ? sessionHeading(messages) : null;
+  const headingText = heading ? (heading.ticket && !heading.title.includes(heading.ticket) ? heading.ticket + " · " : "") + heading.title : "";
+  useEffect(() => {
+    if (!headingText) return;
+    const prev = document.title;
+    document.title = headingText.slice(0, 60) + " · " + config.title;
+    return () => { document.title = prev; };
+  }, [headingText, config.title]);
 
   // Lightbox: open on the `chat-lightbox` event dispatched by a rendered <img>; close on Esc.
   useEffect(() => {
@@ -839,6 +866,14 @@ export default function AgentConsole({ config }) {
         </span>
         {messages.length ? (
           <small className="text-muted max-sm:hidden">· {messages.length} msg</small>
+        ) : null}
+        {heading ? (
+          <span className="flex min-w-0 flex-1 items-center gap-1.5" title={heading.title}>
+            {heading.ticket ? (
+              <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold ${a.chip}`}>{heading.ticket}</span>
+            ) : null}
+            <span className="truncate text-[13px] text-ink max-sm:hidden">{heading.title}</span>
+          </span>
         ) : null}
         <span className="ml-auto flex items-center gap-3.5">
           {!isJob && config.sessionsPath ? (
