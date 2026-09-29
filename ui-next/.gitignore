@@ -1,5 +1,6 @@
 /node_modules
 .snapshots
+.downloads
 # profile Chrome bền cho scripts/debug.mjs --profile (chứa cookie/session — không commit)
 .chrome-profiles
 /.next
