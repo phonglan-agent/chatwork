@@ -50,9 +50,11 @@ if (CLAUDE_DIR === path.join(HOME, ".claude")) {
 
 // The UI spawns `claude` by name; pm2's PATH often lacks ~/.local/bin where it lives. Dedupe so the
 // prefix doesn't pile up một bản sao mỗi lần restart (env spread lại từ chính nó).
-const PATH = [`${HOME}/.local/bin`, ...(process.env.PATH || "").split(":")]
+// path.delimiter (not a hardcoded ":") — trên Windows PATH nối bằng ";", ":" sẽ băm nát mỗi entry
+// ngay ở dấu hai chấm sau ký tự ổ đĩa (vd "C:\Windows" → "C", "\Windows").
+const PATH = [`${HOME}/.local/bin`, ...(process.env.PATH || "").split(path.delimiter)]
   .filter((p, i, a) => p && a.indexOf(p) === i)
-  .join(":");
+  .join(path.delimiter);
 
 const env = {
   ...process.env,

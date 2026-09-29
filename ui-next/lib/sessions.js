@@ -11,14 +11,16 @@ import { parseSuggestItems } from "./claude.js";
 // app/api/<console>/route.js. Phiên của chúng nằm ở thư mục .jsonl của ROOT, không phải của project.
 const ROOT_CWD_CONSOLES = new Set(["evidence", "report", "kloc", "translate"]);
 
-// Tên thư mục phiên do Claude mã hoá từ CWD: thay mọi ký tự [/.] → '-'
-// (vd /home/nghiadv/IdeaProjects/rezil-esms → -home-nghiadv-IdeaProjects-rezil-esms).
+// Tên thư mục phiên do Claude mã hoá từ CWD: thay mọi ký tự [\ / : .] → '-'
+// (vd /home/nghiadv/IdeaProjects/rezil-esms → -home-nghiadv-IdeaProjects-rezil-esms;
+// trên Windows D:\WebstormProjects\chatwork → D--WebstormProjects-chatwork — ':' và '\' đều
+// thành '-', cộng dồn thành gạch đôi sau ký tự ổ đĩa).
 // `consoleKey` (tuỳ chọn) chỉ dùng để chọn ĐÚNG cwd; không truyền thì giữ nguyên hành vi cũ.
 function encCwd(project, consoleKey) {
   const cwd = consoleKey && ROOT_CWD_CONSOLES.has(consoleKey)
     ? ROOT
     : resolveProject(normalizeProject(project)).cwd;
-  return cwd.replace(/[/.]/g, "-");
+  return cwd.replace(/[\\/:.]/g, "-");
 }
 
 // Thư mục .jsonl của 1 project trong 1 CLAUDE_CONFIG_DIR bất kỳ.

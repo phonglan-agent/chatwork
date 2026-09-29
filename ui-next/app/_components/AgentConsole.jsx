@@ -868,9 +868,9 @@ export default function AgentConsole({ config }) {
           <small className="text-muted max-sm:hidden">· {messages.length} msg</small>
         ) : null}
         {heading ? (
-          <span className="flex min-w-0 flex-1 items-center gap-1.5" title={heading.title}>
+          <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden" title={heading.title}>
             {heading.ticket ? (
-              <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold ${a.chip}`}>{heading.ticket}</span>
+              <span className={`min-w-0 max-w-full shrink truncate rounded px-1.5 py-0.5 text-xs font-semibold ${a.chip}`}>{heading.ticket}</span>
             ) : null}
             <span className="truncate text-[13px] text-ink max-sm:hidden">{heading.title}</span>
           </span>
