@@ -9,7 +9,7 @@ Fix a bug from a Jira ticket with a safe, minimal change. Correctness over creat
 - Reproduction steps / expected vs actual
 
 ## Steps
-1. **Read Jira** ticket; confirm requirement. Stop & ask if ambiguous.
+1. **Read Jira** ticket; confirm requirement. Stop & ask if ambiguous. If the fix depends on BD, read the rows you rely on with formatting — struck-through rows are dropped spec (`AGENT_RULES.md` §Đọc BD).
 2. **Sync** base: `git checkout develop && git pull`.
 3. **Branch**: `git switch -c <type>/YYYY-MM-REZIL-XXXX-<SCREEN-CODE>` **trước khi sửa file** — `type` auto-mapped from Jira issue type (Bug→`bug`, RoC→`roc`, Task→`feature`...; see config/jira.json). E.g. `bug/2026-06-REZIL-2352-ISSUE-001`.
 4. **Locate root cause** — trace LIB (domain/validation/business rule/mapper in `rezil-esms-lib`) → BE Scala (controller/route → service → repository) → FE Svelte (component → store → api). Domain/business rules live in LIB, not in controllers — if the root cause is a domain/validation rule, fix it in LIB. A fix touching LIB + BE may need a PR in **both** `rezil-esms-lib` and `rezil-esms` (land LIB first, cross-link).

@@ -86,19 +86,6 @@ export function loadConfig(name) {
   return cfg;
 }
 
-// Resolve a single REZIL repo entry by name (for auto mode). Defaults to defaultRepo.
-export function resolveRepo(name) {
-  const gh = loadConfig("github");
-  const key = name || gh.defaultRepo;
-  const r = gh.repos[key];
-  if (!r) throw new Error(`Unknown repo "${key}". Known: ${Object.keys(gh.repos).join(", ")}`);
-  return { name: key, ...r };
-}
-
-export function listRepos() {
-  const gh = loadConfig("github");
-  return { repos: Object.keys(gh.repos), defaultRepo: gh.defaultRepo };
-}
 
 // Single-repo projects driven by a config/<key>.json (own CLAUDE.md/.claude auto-loaded by cwd).
 // Adding one is a one-entry change here + its config/<key>.json (+ an entry in Chat.jsx's PROJECTS

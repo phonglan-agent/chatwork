@@ -88,7 +88,7 @@ ai-agent/
 │   └── commit_message.md
 │
 └── ui-next/               # Next.js (App Router + React + Tailwind) web UI — port 5000, ngrok, Basic Auth
-    ├── app/               # pages (auto REZIL/Feature, release, chat, /kloc, /translate, /usage)
+    ├── app/               # pages (investigate, release, chat, /kloc, /translate, /usage)
     │                      #   + api route handlers (SSE)
     │                      #   /kloc: đọc PR merge 4 repo rezil → append LoC vào Sheet KLoC-MVP2
     │                      #   (spec app/kloc/KLOC_SPEC.md đọc lúc chạy, không cần build)
@@ -152,5 +152,5 @@ mặc định), `acct2` = `~/.claude-account2`, `acct3` = `~/.claude-account3`. 
   **Không bao giờ symlink `.credentials.json`.**
 - **Console `/chat`, `/release`, `/evidence`, `/kloc`, `/translate` và `/investigate` tự đổi account** khi account đang
   dùng hết quota, giữ nguyên phiên, in 1 dòng thông báo. Logic ở `ui-next/lib/accountSwitch.js`;
-  fail-open (không rõ quota → giữ account cũ). Console job còn lại (`/auto`, `/feature`, `/rebase`,
+  fail-open (không rõ quota → giữ account cũ). Console job còn lại (`/rebase`,
   `/report`) vẫn dùng account của pm2. Chi tiết: `ui-next/README.md` §Nhiều account Claude, `README.md` §9.

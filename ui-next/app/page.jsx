@@ -11,11 +11,9 @@ const GROUPS = [
   {
     name: "REZIL",
     accent: "blue",
-    tag: "rezil-esms · Fix-Bug / Feature / Release",
+    tag: "rezil-esms · Investigate / Release / Report",
     cards: [
-      { href: "/auto", icon: "⚙️", title: "Auto (Fix-Bug)", body: "Ticket REZIL-xxxx → fix tối thiểu → PR" },
       { href: "/investigate", icon: "🔍", title: "Điều tra ticket", body: "Ticket → nguyên nhân gốc (file:line) · DEV/SQA đánh giá · phương án khắc phục — chỉ đọc" },
-      { href: "/feature", icon: "🏗️", title: "Feature", body: "BD + Figma → 16 phase → Scala/Svelte → PR" },
       { href: "/release", icon: "🚀", title: "Release", body: "Deploy DEV1 / PR / tag — agent github-ops" },
       { href: "/rebase", icon: "🔀", title: "Rebase / Merge", body: "Đo diverge → rebase hoặc merge develop vào nhánh, resolve conflict, build verify — agent git-rebaser" },
       { href: "/report", icon: "📊", title: "Report", body: "Chat báo cáo Jira — Claude dựng JQL, lấy data qua REST API, tự phân tích" },

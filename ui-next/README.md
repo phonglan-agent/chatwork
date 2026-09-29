@@ -2,7 +2,7 @@
 
 UI chính thức của AI agent (Next.js App Router + React + Tailwind). Đã thay thế hoàn toàn `ui/server.js` cũ (đã xoá). Phục vụ ở **gốc `/`** (port **5000** qua pm2), ngrok riêng của project, Basic Auth qua `.env`.
 
-**Console:** Auto REZIL Fix-Bug (ticket→PR) · **Feature** (BD+Figma → 16-phase → PR) · **Điều tra ticket** (root cause, read-only) · **Release** (drive github-ops: deploy DEV1/PR/tag) · **Rebase/Merge** (drive git-rebaser) · **Report** (Jira report read-only qua REST CLI) · **Sprint giờ âm** (burndown Expect vs Actual) · **KLOC** (LoC 4 repo → Google Sheet) · **Translate** (đối chiếu BD bản VN ↔ JP) · **Evidence** (chụp/gán evidence test case) · Chat REZIL + Chat **Toàn năng** (free, bypass) · `/usage` · Cancel · Basic Auth · `/healthz`.
+**Console:** **Điều tra ticket** (root cause, read-only) · **Release** (drive github-ops: deploy DEV1/PR/tag) · **Rebase/Merge** (drive git-rebaser) · **Report** (Jira report read-only qua REST CLI) · **Sprint giờ âm** (burndown Expect vs Actual) · **KLOC** (LoC 4 repo → Google Sheet) · **Translate** (đối chiếu BD bản VN ↔ JP) · **Evidence** (chụp/gán evidence test case) · Chat REZIL + Chat **Toàn năng** (free, bypass) · `/usage` · Cancel · Basic Auth · `/healthz`.
 
 **Kênh phụ:** Telegram bot (long-polling) chạy ở **pm2 app riêng** `ai-agent-telegram` (`telegram-bot.mjs`) — dùng lại y hệt plumbing chat của web (`buildChatArgv`/`handleEvent`) nên prompt & guardrail giống nhau, nhưng KHÔNG chết theo mỗi lần app Next restart. Có lệnh cứu hộ `/status` `/restart` `/logs` chạy thẳng pm2 (xem §Bot Telegram & cứu hộ pm2).
 
@@ -82,14 +82,12 @@ Truy cập: `https://<domain>/`.
 app/
   layout.jsx            # root layout + globals.css + no-FOUC theme script
   ThemeToggle.jsx       # client: toggle dark/light (localStorage)
-  page.jsx              # home: card tới mọi console (Auto/Điều tra/Feature/Release/Rebase/Report/KLOC/Sprint/Chat…)
+  page.jsx              # home: card tới mọi console (Điều tra/Release/Rebase/Report/KLOC/Sprint/Chat…)
   globals.css           # Tailwind v4 + theme tokens (light/dark)
   _components/AgentConsole.jsx # client: console DÙNG CHUNG cho mọi trang. mode "chat" (chat/release/
-                               #   rebase/report) + mode "job" (auto/feature: composer +
-                               #   result/NEED-INFO/cancel). Upload file, snapshot, âm báo khi xong.
+                               #   rebase/report) + mode "job" (composer + NEED-INFO/cancel,
+                               #   hiện chưa trang nào dùng). Upload file, snapshot, âm báo khi xong.
   chat/     page.jsx → Chat.jsx        # chat project-aware (rezil/free) + toggle ✏️ Sửa code
-  auto/     page.jsx → Auto.jsx        # job: ticket REZIL + repo → /api/run
-  feature/  page.jsx → Feature.jsx     # job: ticket + repo + BD/Figma → /api/feature-run
   release/  page.jsx → Release.jsx     # chat: drive github-ops (deploy/PR/tag) → /api/release
   rebase/   page.jsx → Rebase.jsx      # chat: drive git-rebaser (rebase/merge/force-push) → /api/rebase
   report/   page.jsx → Report.jsx      # chat: Jira report read-only (JQL→REST CLI) → /api/report
@@ -105,8 +103,6 @@ app/
   sprint/   page.jsx                   # tool: upload xlsx burndown → giờ âm (Expect vs Actual)
   api/
     chat/route.js         # SSE chat (project-aware, slash-commands)
-    run/route.js          # SSE auto REZIL (ticket → PR), job-lock per repo
-    feature-run/route.js  # SSE auto Feature (BD+Figma → 16-phase → PR), job-lock per repo
     release/route.js      # SSE release (drive github-ops, multi-turn resume, no lock)
     rebase/route.js       # SSE rebase (drive git-rebaser, multi-turn resume)
     report/route.js       # SSE report (Jira read-only chat, multi-turn resume)
@@ -126,10 +122,8 @@ instrumentation.js      # boot hook; chỉ start bot in-process khi TELEGRAM_IN_
 telegram-bot.mjs        # entry của pm2 app `ai-agent-telegram` — bot chạy tiến trình riêng
 scripts/pm2-restart.sh  # restart pm2 an toàn từ bên trong chính app (setsid + bậc thang tự chữa)
 lib/
-  config.js             # đọc ../config/*.json; resolveRepo / resolveProject
+  config.js             # đọc ../config/*.json; resolveProject
   claude.js             # chat prompt/tools per project, claudeSSE pump (onSpawn/onClose/timeout)
-  auto.js               # auto REZIL prompt/tools (ticket → minimal fix → PR)
-  featureAuto.js        # auto Feature prompt/tools (16-phase BD+Figma → Scala/Svelte → PR)
   release.js            # release prompt/argv (--agent github-ops, bypassPermissions, merge allowed)
   rebase.js             # rebase prompt/argv (--agent git-rebaser, multi-turn confirm-before-write)
   report.js             # report prompt/argv (Jira JQL → REST CLI, read-only, không dùng MCP)
@@ -570,7 +564,7 @@ Chi tiết đáng lưu ý:
   tính cả nó thì đúng lượt cần chạy lại nhất lại bị chặn.
 - `session` được phát lại cho lượt mới: lượt hỏng có thể đã tạo session id ở account cũ, client phải
   giữ id của lượt chạy được, nếu không lượt sau resume nhầm phiên rỗng.
-- Console job (`/auto`, `/feature`, …) không truyền `retry` → hành vi y như trước.
+- Console job (`/rebase`, `/report`, …) không truyền `retry` → hành vi y như trước.
 
 Refresh token: token OAuth mỗi account chỉ được CLI làm mới khi có một lượt `claude` thật chạy dưới
 account đó, nên account ít dùng hay bị quá hạn token. Quy tắc:
@@ -592,7 +586,7 @@ login`):
 Giới hạn: áp cho `/chat`, `/release` và `/evidence` (cả ba đều đa lượt, resume theo phiên;
 `/release` an toàn vì cả 3 account đều có agent `github-ops` và cùng bộ MCP server, `/evidence` vì
 cả 3 account đều có `gsheets-rezil` + `mysql_207` và cùng đọc được spec `SCREEN_EVIDENCE.md`). Các
-console job còn lại (`/auto`, `/feature`, `/rebase`, `/report`, `/investigate`) vẫn chạy bằng
+console job còn lại (`/rebase`, `/report`, `/investigate`) vẫn chạy bằng
 account của pm2; `todos/` và
 `file-history/` (`/rewind`) vẫn riêng theo account nên không mang theo khi đổi. Đổi account xảy ra ở
 ĐẦU LƯỢT (`chooseAccount`, theo quota đo được) và ở lúc RUN VỪA CHẾT (`retry` → `fallbackAccount`,

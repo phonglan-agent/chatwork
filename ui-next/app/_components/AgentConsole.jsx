@@ -844,7 +844,7 @@ export default function AgentConsole({ config }) {
     else submitChat();
   }
 
-  const nav = config.nav || [{ href: "/auto", label: "⚙️ Auto" }, { href: "/", label: "⌂ Home" }];
+  const nav = config.nav || [{ href: "/", label: "⌂ Home" }];
 
   return (
     <div className="relative flex h-[100dvh] flex-col">

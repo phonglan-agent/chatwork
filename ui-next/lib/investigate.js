@@ -20,11 +20,11 @@
 //
 // Anh em với report.js (read-only console) nhưng nhìn vào CODE thay vì thống kê Jira. Cố tình KHÔNG
 // dùng --agent: prompt tự chứa, không trôi theo ~/.claude/agents/*.md. Muốn đi tiếp tới PR thì dùng
-// /auto (fix-bug) — màn này chỉ điều tra & đề xuất.
+// /chat sửa code — màn này chỉ điều tra & đề xuất.
 import fs from "fs";
 import path from "path";
 import { ROOT, loadConfig } from "./config.js";
-import { WORDING_INSTR } from "./claude.js";
+import { WORDING_INSTR, BD_STRIKETHROUGH_INSTR } from "./claude.js";
 
 function readRoot(rel) {
   try {
@@ -352,7 +352,7 @@ export function investigateSystemPrompt(nowStamp) {
     "Bạn đang chạy trong INVESTIGATE CONSOLE (Điều tra ticket) của AI agent — phiên web UI, ĐA LƯỢT",
     "(multi-turn), TUYỆT ĐỐI CHỈ ĐỌC. Nhiệm vụ: điều tra một ticket REZIL để tìm NGUYÊN NHÂN GỐC,",
     "đánh giá theo bảng phân loại của team, và nêu phương án khắc phục lần tới. Bạn KHÔNG sửa code, KHÔNG tạo branch/PR,",
-    "KHÔNG ghi Jira — người dùng đọc kết luận rồi tự quyết (muốn fix thật thì họ chạy màn /auto).",
+    "KHÔNG ghi Jira — người dùng đọc kết luận rồi tự quyết (muốn fix thật thì họ chạy màn /chat bật Sửa code).",
     "Trả lời TIẾNG VIỆT. Giữ tiếng Anh cho: đường dẫn file, tên hàm/class/bảng, branch, commit hash, lệnh shell, SQL.",
     `Thời điểm hiện tại = ${nowStamp} (giờ địa phương) — dùng mốc này khi nói 'gần đây', KHÔNG tự sinh ngày khác.`,
     "",
@@ -556,6 +556,8 @@ export function investigateSystemPrompt(nowStamp) {
     "",
     "### memory/common_bugs.md",
     readRoot("memory/common_bugs.md").trim(),
+    "",
+    BD_STRIKETHROUGH_INSTR,
     "",
     WORDING_INSTR,
     "",

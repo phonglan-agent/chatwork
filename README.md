@@ -204,9 +204,9 @@ See `WORKFLOW.md` / `WORKFLOW_FEATURE.md` for the full step lists and `CLAUDE.md
 A browser UI (**Next.js + React + Tailwind**, in `ui-next/`) to hand a ticket/task to Claude, which
 **implements it end-to-end up to creating the PR**. Dark/light theme, responsive, Vietnamese.
 
-Every surface (`/auto`, `/feature`, `/chat`, `/release`, `/translate`) is the **same console shell** — a
+Every surface (`/chat`, `/investigate`, `/release`, `/translate`, …) is the **same console shell** — a
 header, a streaming conversation log, and a composer at the bottom. They differ only by what the
-composer collects (ticket+repo / free task / chat input) and whether edits are allowed.
+composer collects and whether edits are allowed.
 
 ```bash
 cd ui-next
@@ -215,26 +215,11 @@ npm run build && npm run start   # http://127.0.0.1:5000
 # or via pm2:  pm2 start ecosystem.config.js   (Next app + bot Telegram + ngrok riêng của project)
 ```
 
-The REZIL coding workflows — pick by task type:
-
-- **Auto / Fix-Bug** (`/auto`): enter the **Jira ticket** and pick the **repo**; submit. The server runs
-  `claude -p --permission-mode auto` in that repo and **streams progress** live (in Vietnamese): it
-  reads the ticket (deriving issue type + screen code), creates the branch, makes a **minimal fix**, runs
-  the quality gates, commits, pushes, opens the PR, and comments Jira. See `WORKFLOW.md`.
-- **Feature** (`/feature`): enter the **Jira ticket**, pick the **primary repo**, and paste **BD + Figma
-  context** (text, links, or repo-relative BD paths). Runs the full **16-phase** design→code workflow
-  (BD → spec → UT/IT → OpenAPI/Aspida → Scala LIB/BE → Svelte FE → test → review → PR). Per-phase
-  artifacts are written to `.ai-agent/generated/` (**git-ignored**, audit trail only); a LIB+BE feature
-  may open a PR in **both** `rezil-esms` and `rezil-esms-lib`. It's a **long job** (tens of minutes) and
-  shares the per-repo job lock with Auto. See `WORKFLOW_FEATURE.md`.
-- **Info gate**: if the ticket/task lacks enough info, Claude stops and prints `⛔ NEED-INFO:`
-  (no changes) — the UI shows a banner so you can Cancel.
-- **Concurrency per repo**: one job per repo at a time; a second job on the **same repo** returns `409`.
 - **Hard limits**: never merge, never deploy, never force-push `develop`/`main` (force-push of your own
   feature/fix branch is allowed; the ban on `develop`/`main` is enforced via the system prompt).
-  Non-interactive — it states assumptions and proceeds.
+- **BD strikethrough**: every flow that reads BD (chat, investigate) must re-read the rows it relies on
+  with formatting — struck-through rows are dropped spec. See `AGENT_RULES.md` §Đọc BD.
 - Binds **127.0.0.1 only**; **Basic Auth** via `ui-next/.env` `UI_BASIC_AUTH` (needed when exposed via ngrok).
-- ⚠️ Auto mode makes **real changes** to the selected repo and opens a **real PR**. Review before merging.
 
 ### Translate (`/translate`)
 A multi-turn console that compares a **Vietnamese document against its Japanese translation** on Google
@@ -273,7 +258,7 @@ Vietnamese. Type `/usage` to see token usage + estimated cost. Multi-turn (sessi
 - **✏️ Sửa code toggle**: tick it to let the chat edit files and run build/test (`Edit`/`Write`/`Bash`).
   Same hard limits apply — never merge, never deploy, never force-push `develop`/`main`. Leave it off for plain Q&A.
 - ⚠️ With the toggle on, the chat edits the **default repo's working tree** on its current branch
-  (no auto branch/commit) — use it for quick iterative changes, not the full ticket workflow (use Auto for that).
+  (no auto branch/commit) — use it for quick iterative changes, not the full ticket workflow.
 - **Runs out of quota? The chat keeps going on another account** — same session, no clicks. See §9.
 
 ### Release (`/release`)
@@ -285,7 +270,7 @@ rezil repos — promote a DEV1 PR, create releases/tags, watch CI. Just describe
   workflow) stops and asks; you approve in the **next turn** (session resume) before it runs.
 - **DEV1 only — STG is refused.** Backup of the base branch happens before any promote/merge; the
   server injects the current timestamp for the backup-branch name.
-- **Release MAY merge** the DEV1 promote PR (that's the flow) — so unlike Auto/Chat it is *not* blocked
+- **Release MAY merge** the DEV1 promote PR (that's the flow) — so unlike Chat it is *not* blocked
   from merging. Everything destructive stays blocked via `disallowedTools`: delete push, history
   rewrite (`reset --hard`/`rebase`/`clean`), repo settings & deletion, `gh release delete`, CI secrets,
   `gh auth`/`git config`, `rm`/`sudo`, and code edits (`Edit`/`Write`). See `lib/release.js`.
@@ -347,7 +332,7 @@ its own, so it is remembered for the process lifetime instead of the 60s quota c
 visible once the run has died, so the failed run is **re-spawned on another account inside the same
 turn** (up to 3 spawns) instead of costing the user a turn.
 Only `/chat`, `/release`, `/evidence`, `/kloc` and `/investigate` do this — the remaining job consoles
-(`/auto`, `/feature`, `/rebase`, `/report`) still use the pm2 account. Details in `ui-next/README.md`.
+(`/rebase`, `/report`) still use the pm2 account. Details in `ui-next/README.md`.
 
 ### Manual handoff from a terminal
 

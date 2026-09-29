@@ -174,6 +174,24 @@ export const NO_DEGRADE_SAFETY = [
   "REZIL-2109, REZIL-2174) · service worker cache-first `version.json` gây admin 500 sau build (REZIL-2172).",
 ].join("\n");
 
+// Đọc BD trên Google Sheet — yêu cầu người dùng 2026-09-29: task code liên quan BD phải đọc kỹ BD vì
+// BD không xoá spec cũ mà GẠCH NGANG + tô đỏ. Đọc giá trị thô thì dòng đã bỏ trông y hệt dòng còn hiệu
+// lực → implement/kết luận theo spec đã huỷ. Chi tiết: AGENT_RULES.md §Đọc BD.
+export const BD_STRIKETHROUGH_INSTR = [
+  "## ĐỌC BD — SOI GẠCH NGANG (bắt buộc khi task code/điều tra dựa vào BD)",
+  "BD không xoá spec cũ mà GẠCH NGANG + tô đỏ, kèm ghi chú `YYYY/MM/DD REZIL-XXXX`. Chỉ đọc giá trị thô",
+  "(`get_sheet_data` mặc định) thì dòng đã bỏ trông giống hệt dòng còn hiệu lực.",
+  "1. Dòng nào dùng để kết luận, implement, hoặc trông mâu thuẫn → PHẢI đọc lại kèm định dạng",
+  "   (`mcp__gsheets-rezil__get_sheet_data` với `include_grid_data: true`) TRƯỚC khi kết luận hay hỏi BrSE.",
+  "2. Lấy dải cột RỘNG rồi tìm đúng ô có chữ: ô trống luôn trả `strikethrough: false`, soi nhầm ô trống",
+  "   là ra kết quả sai.",
+  "3. Kiểm CẢ HAI kiểu gạch: gạch cả ô (`effectiveFormat.textFormat.strikethrough`) và gạch một phần chữ",
+  "   (`textFormatRuns[].format.strikethrough`).",
+  "4. Có gạch + ghi chú REZIL-XXXX = spec ĐÃ BỎ → không implement, không dùng làm căn cứ. Chữ đỏ KHÔNG",
+  "   gạch = spec mới thêm hoặc vừa sửa → ưu tiên đọc kỹ.",
+  "5. Khi trích BD để giải thích/kết luận, ghi rõ đã soi định dạng dòng đó (còn hiệu lực / đã gạch).",
+].join("\n");
+
 // Claude session ids are UUIDs. Only forward a well-formed one to `--resume`; anything else
 // (empty/junk) → "" so the run starts a fresh session instead of feeding garbage to the CLI.
 const SESSION_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -221,7 +239,7 @@ const TABLE_INSTR =
 
 // REZIL team templates live in the ai-agent repo (ROOT), NOT in rezil-esms where chat's cwd sits.
 // Chat gets ROOT via --add-dir (see buildChatArgv) so the agent can Read these on demand; this line
-// tells it where they are + when to use them. Auto/feature flows inline the same files (lib/auto.js).
+// tells it where they are + when to use them.
 function rezilTemplatesInstr() {
   return (
     "TEMPLATE TEAM: khi được yêu cầu TẠO PR / COMMIT / COMMENT JIRA / VIẾT MIGRATION, PHẢI theo đúng " +
@@ -247,6 +265,7 @@ function chatSystemPrompt(project, canEdit) {
       GIT_BRANCH_SAFETY,
       WORKTREE_INSTR,
       NO_DEGRADE_SAFETY,
+      BD_STRIKETHROUGH_INSTR,
       PM2_OPS_SAFETY,
       snapshotInstr(""),
       debugInstr(""),
@@ -276,6 +295,7 @@ function chatSystemPrompt(project, canEdit) {
       rezilTemplatesInstr()
     );
   }
+  base.push(BD_STRIKETHROUGH_INSTR);
   base.push(TABLE_INSTR);
   base.push(WORDING_INSTR);
   base.push(SUGGEST_INSTR);

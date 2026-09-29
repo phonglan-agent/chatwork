@@ -20,7 +20,7 @@ trail (the substitute for human phase-gates). Keep them **git-ignored** (add `.a
 
 ## Steps (16 phases)
 1. **Intake** — summarize the request; identify affected layers (LIB/BE/FE/OpenAPI/Test) and repo(s); list inputs to read; note missing info. → `00-task-intake.md`.
-2. **Read BD** — extract feature, screens, user flow, input/output fields, business rules, validation, error cases, permissions, API candidates, data model. Do not invent rules; missing → Assumptions. → `01-bd-analysis.md`.
+2. **Read BD** — extract feature, screens, user flow, input/output fields, business rules, validation, error cases, permissions, API candidates, data model. Do not invent rules; missing → Assumptions. Struck-through rows are dropped spec — re-read every row you rely on with formatting (`AGENT_RULES.md` §Đọc BD). → `01-bd-analysis.md`.
 3. **Extract structured spec** — requirement IDs (REQ-xxx), owner layer per rule, layer classification (LIB/BE/FE/OpenAPI), traceability matrix BD→Test→Code. → `02-structured-spec.md`.
 4. **Generate UT cases** — UT for LIB (domain/validation/mapper), BE (service/controller/mapping/error), FE (render/form/state). Normal + boundary + invalid + empty + permission + error. Each traces to a REQ. → `03-ut-testcases.md`.
 5. **Select IT cases** — pick UT that need multi-layer / API-contract / BE+DB / FE+API / permission coverage; record reason + what was not selected. → `04-it-testcases.md`.

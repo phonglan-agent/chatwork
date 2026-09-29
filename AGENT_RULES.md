@@ -79,7 +79,22 @@ nhất vì build/test/typecheck vẫn pass. Rule dưới đây rút từ case đ
 - [ ] Liệt kê các luồng lân cận đã test lại (regression tối thiểu)
 
 > Prompt tương ứng cho agent: `NO_DEGRADE_SAFETY` trong `ui-next/lib/claude.js`, được nạp vào mọi flow
-> có quyền sửa code (auto REZIL/feature, chat chế độ sửa code, rebase console, release console).
+> có quyền sửa code (chat chế độ sửa code, rebase console, release console).
+
+## Đọc BD — soi gạch ngang (áp cho mọi task code / điều tra dựa vào BD)
+
+BD không xoá spec cũ mà **gạch ngang và tô đỏ**, kèm ghi chú `YYYY/MM/DD REZIL-XXXX`. Nếu chỉ đọc giá
+trị thô, dòng đã bỏ trông giống hệt dòng còn hiệu lực — implement hoặc kết luận theo spec đã huỷ.
+
+1. Dòng nào dùng để kết luận, implement, hoặc trông mâu thuẫn → **đọc lại kèm định dạng**
+   (`get_sheet_data` với `include_grid_data: true`) trước khi kết luận hay hỏi BrSE.
+2. Lấy dải cột rộng và tìm đúng ô có chữ. Ô trống luôn trả `strikethrough: false`, dễ cho kết quả sai.
+3. Kiểm tra cả hai kiểu gạch: gạch cả ô (`effectiveFormat.textFormat.strikethrough`) và gạch một phần
+   chữ (`textFormatRuns[].format.strikethrough`).
+4. Có gạch kèm ghi chú REZIL-XXXX = spec **đã bỏ**. Chữ đỏ không gạch = spec **mới thêm hoặc vừa sửa**.
+
+> Prompt tương ứng: `BD_STRIKETHROUGH_INSTR` trong `ui-next/lib/claude.js`, nạp vào chat (rezil + toàn
+> năng, cả chế độ hỏi-đáp) và console `/investigate`.
 
 ## Rebase & tích hợp code (rezil-esms / rezil-esms-lib / rezil-esms-mobile / rezil-esms-portal)
 
