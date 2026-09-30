@@ -97,8 +97,13 @@ ai-agent/
     │                      #   ChecklistAI khi được yêu cầu (spec app/translate/TRANSLATE_SPEC.md,
     │                      #   đọc lúc chạy, không cần build); tab đã soát nhớ trong
     │                      #   data/translate-scan-state.json qua scripts/translate-state.mjs
-    ├── lib/               # config / claude SSE / auto+feature+release prompts / usage / limits / job-lock
+    ├── lib/               # config / claude SSE / release+rebase+report+investigate+evidence+kloc+
+    │                      #   translate prompts / usage / limits / job-lock
     │                      #   + accountSwitch.js: chat tự đổi account Claude khi hết quota (xem §Nhiều account)
+    │                      #   + publicApi.js: API bên thứ ba (xem app/api/v1/ bên dưới)
+    ├── app/api/v1/        # API CHO BÊN THỨ BA (API key riêng, KHÔNG qua Basic Auth UI): generate/
+    │                      #   (prompt → text) và vision/ (ảnh + prompt → text, ảnh qua stdin
+    │                      #   stream-json, KHÔNG qua tool Read) — xem README §API cho bên thứ ba
     ├── proxy.js           # HTTP Basic Auth (UI_BASIC_AUTH) — Next "proxy" convention
     ├── telegram-bot.mjs   # bot Telegram chạy TIẾN TRÌNH RIÊNG (pm2 app ai-agent-telegram)
     ├── scripts/shot-check.mjs # kiểm ảnh evidence bằng text (decode PNG, đếm pixel khoanh đỏ) —

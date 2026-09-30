@@ -100,19 +100,29 @@ app/
   kloc/     page.jsx → Kloc.jsx        # chat: đọc PR merge 4 repo rezil → append LoC/KLoC vào Google
                                        #   Sheet KLoC-MVP2 (spec KLOC_SPEC.md cạnh màn, nhúng vào
                                        #   prompt lúc chạy) → /api/kloc
+  translate/ page.jsx → Translate.jsx  # đối chiếu tài liệu BD bản VN ↔ JP trên Google Sheet (spec
+                                       #   TRANSLATE_SPEC.md cạnh màn) → /api/translate
   sprint/   page.jsx                   # tool: upload xlsx burndown → giờ âm (Expect vs Actual)
   api/
     chat/route.js         # SSE chat (project-aware, slash-commands)
+    chat/active/route.js  # phiên chat đang chạy (poll cho AgentConsole)
+    chat/upload/route.js  # upload ảnh/Excel vào .ai-uploads/ trong cwd (agent Read được) — lib/upload.js
     release/route.js      # SSE release (drive github-ops, multi-turn resume, no lock)
     rebase/route.js       # SSE rebase (drive git-rebaser, multi-turn resume)
     report/route.js       # SSE report (Jira read-only chat, multi-turn resume)
     investigate/route.js  # SSE điều tra ticket (read-only: Jira + code + git log + SELECT QA)
     evidence/route.js     # SSE evidence (đọc-ghi sheet SQA + rclone Drive, multi-turn resume)
     kloc/route.js         # SSE KLOC (gh đọc PR → ghi tab KLoC-MVP2, multi-turn resume)
+    translate/route.js    # SSE translate (đối chiếu VN/JP, ghi report tab ChecklistAI khi yêu cầu)
     sprint/route.js       # POST xlsx → JSON giờ âm (dùng lib/sprint.js)
     v1/generate/route.js  # API CHO BÊN THỨ BA: POST/GET prompt → text (hộp kín, API key riêng,
                           #   hạn mức/phút-ngày, tuỳ chọn stream SSE) — xem §API cho bên thứ ba
-    sessions/route.js     # list/đọc/xoá phiên Claude CLI (.jsonl) theo project + console
+    v1/vision/route.js    # API CHO BÊN THỨ BA: POST multipart (ảnh + prompt) → text (đọc nội dung
+                          #   ảnh rồi làm theo yêu cầu, cùng auth/hạn mức với v1/generate) — xem
+                          #   §API cho bên thứ ba
+    sessions/route.js     # list phiên Claude CLI (.jsonl) theo project + console
+    sessions/[id]/route.js # đọc/xoá 1 phiên
+    download/[name]/route.js # tải file publish qua scripts/publish-file.mjs (PDF/XLSX từ chat)
     snapshot/[name]/route.js # serve runtime asset (ảnh snapshot web) — Next16 không serve public/ sau build
     cancel/route.js       # POST hủy job đang chạy
     healthz/route.js      # health check
@@ -120,7 +130,6 @@ proxy.js                # HTTP Basic Auth (UI_BASIC_AUTH) — Next "proxy" conve
                         #   miễn (nó tự gác bằng API key riêng)
 instrumentation.js      # boot hook; chỉ start bot in-process khi TELEGRAM_IN_PROCESS=1 (mặc định: không)
 telegram-bot.mjs        # entry của pm2 app `ai-agent-telegram` — bot chạy tiến trình riêng
-scripts/pm2-restart.sh  # restart pm2 an toàn từ bên trong chính app (setsid + bậc thang tự chữa)
 lib/
   config.js             # đọc ../config/*.json; resolveProject
   claude.js             # chat prompt/tools per project, claudeSSE pump (onSpawn/onClose/timeout)
@@ -145,6 +154,7 @@ lib/
   kloc.js               # KLOC prompt/argv: nhúng nguyên văn spec app/kloc/KLOC_SPEC.md lúc chạy —
                         #   `gh`/`git` chỉ ĐỌC, chỉ ghi tab KLoC-MVP2 (append), không Edit/Write
   jira.js               # Jira Cloud REST client server-side (report console dùng thay MCP)
+  translate.js          # TRANSLATE_PAIRS (8 cặp file VN/JP) — nguồn chung cho /translate + state script
   sprint.js             # burndown "giờ âm" — nguồn chung cho web + skill sprint-negative-hours
   slashCommands.js      # slash-command dùng chung (/usage…) — short-circuit trước khi spawn claude
   sessions.js           # đọc phiên chat Claude CLI (.jsonl); gộp nhiều account, copy phiên giữa account
@@ -157,7 +167,9 @@ lib/
   usage.js              # buildContextReport() — offline ~/.claude/projects parse
   jobs.js               # running Map (job-lock) + cancel
   publicApi.js          # API bên thứ ba: xác thực API key, hạn mức, argv hộp kín (không tool/MCP/
-                        #   settings, cwd thư mục tạm rỗng), chạy 1 lượt + bản stream SSE
+                        #   settings, cwd thư mục tạm rỗng), chạy 1 lượt + bản stream SSE — cả
+                        #   text (/api/v1/generate) và ảnh (/api/v1/vision, ảnh gửi qua stdin
+                        #   stream-json, KHÔNG qua tool Read)
 ecosystem.config.js     # pm2: ai-agent-ui-next + ai-agent-telegram + ai-agent-ngrok
 scripts/
   snapshot.mjs          # chụp screenshot 1 trang (kèm --mark khoanh đỏ) → .snapshots/
@@ -165,6 +177,11 @@ scripts/
   jira-search.mjs       # tra Jira bằng JQL từ CLI (không cần MCP)
   shot-check.mjs        # kiểm ảnh evidence KHÔNG nạp ảnh vào context: tự decode PNG (zlib), đếm
                         #   pixel khoanh đỏ → 1 dòng/ảnh (OK/NO-RED/BLANK + cờ WEAK/EDGE/FULL-VIEWPORT)
+  debug-rec.mjs         # ghi lại 1 phiên debug.mjs (video/trace) qua CDP
+  translate-state.mjs   # đọc/ghi data/translate-scan-state.json (tab Sheet đã soát cho /translate)
+  publish-file.mjs      # publish PDF/XLSX từ chat ra link tải qua /api/download/[name]
+  ngrok.sh              # dựng tunnel ngrok riêng của project (pm2 app ai-agent-ngrok) — xem §Expose ra ngoài
+  pm2-restart.sh        # restart pm2 an toàn từ trong chính app — xem đoạn "⚠️ ĐỪNG gọi thẳng…" ở trên
   mobile-e2e/           # kịch bản e2e app mobile
 ```
 
@@ -404,11 +421,13 @@ Env liên quan (`ui-next/.env`):
 > ⚠️ Chỉ được **một** process poll một token. Bật `TELEGRAM_IN_PROCESS=1` thì phải
 > `pm2 stop ai-agent-telegram` trước, không thì Telegram trả 409 Conflict và cả hai đều nhận thiếu tin.
 
-## API cho bên thứ ba — `/api/v1/generate`
+## API cho bên thứ ba — `/api/v1/generate`, `/api/v1/vision`
 
-Một đầu API để hệ thống NGOÀI gọi Claude sinh nội dung (viết bài, tóm tắt, dịch, đặt tiêu đề…).
-Khách chỉ gửi prompt và nhận text; không có đường nào để họ đọc/ghi file, chạy lệnh hay thấy dữ liệu
-nội bộ.
+Hai đầu API để hệ thống NGOÀI gọi Claude: `/api/v1/generate` sinh nội dung từ text (viết bài, tóm
+tắt, dịch, đặt tiêu đề…), `/api/v1/vision` đọc nội dung một ẢNH rồi làm theo prompt (OCR, tóm tắt ảnh
+chụp màn hình, đọc bảng/biểu đồ…). Khách chỉ gửi prompt (+ ảnh với `/vision`) và nhận text; không có
+đường nào để họ đọc/ghi file, chạy lệnh hay thấy dữ liệu nội bộ. Cùng một bộ xác thực API key + hạn
+mức (`lib/publicApi.js`), mô tả chung ở các mục bên dưới.
 
 **Bật**: đặt `PUBLIC_API_KEYS` trong `ui-next/.env` rồi `./scripts/pm2-restart.sh ai-agent-ui-next --fresh`
 (`pm2 restart` không nạp lại `.env`). Bỏ trống biến này = endpoint tắt, trả 503.
@@ -441,10 +460,40 @@ Tham số: `prompt` (bắt buộc), `system` (chỉ dẫn thêm, được CỘNG
 toàn vẫn giữ), `model` (`haiku|sonnet|opus`, mặc định `PUBLIC_API_MODEL`), `effort`
 (`low|medium|high`, mặc định `low`), `stream`.
 
+### `/api/v1/vision` — ảnh + prompt
+
+Chỉ nhận `POST multipart/form-data` (không có bản JSON — ảnh phải là file thật, không phải base64
+nhồi vào body để đỡ nặng payload). GET không kèm ảnh, chỉ trả bản mô tả hợp đồng.
+
+```bash
+curl -X POST https://<domain>/api/v1/vision \
+  -H 'Authorization: Bearer <API_KEY>' \
+  -F 'image=@screenshot.png' \
+  -F 'prompt=Tóm tắt nội dung trong ảnh'
+# → {"ok":true,"text":"…","usage":{...}}
+
+# stream (SSE) — thêm field stream=1, đọc bằng client hỗ trợ POST + SSE (EventSource chỉ gửi GET
+# nên không dùng được cho route này)
+curl -N -X POST https://<domain>/api/v1/vision \
+  -H 'Authorization: Bearer <API_KEY>' -F 'image=@screenshot.png' -F 'prompt=Đọc bảng trong ảnh' -F 'stream=1'
+```
+
+Field: `image` (bắt buộc — PNG/JPEG/GIF/WEBP, tối đa `PUBLIC_API_MAX_IMAGE_MB` MB, mặc định 15; BMP/SVG
+bị từ chối vì Claude API không nhận trực tiếp 2 media type đó trong content block ảnh), `prompt`
+(bắt buộc), `system`/`model`/`effort`/`stream` giống `/api/v1/generate`.
+
+Ảnh KHÔNG đi qua tool `Read` (Read đọc được bất kỳ file nào trên máy, không chỉ trong cwd — mở tool
+đó cho bên thứ ba là rò dữ liệu nội bộ dù cwd là sandbox rỗng). Thay vào đó ảnh được gửi thẳng trong
+NỘI DUNG tin nhắn qua stdin (`claude -p --input-format stream-json --output-format stream-json`,
+content block `{"type":"image","source":{"type":"base64",...}}`) — độc lập hoàn toàn với `--tools ""`.
+CLI bắt buộc `--output-format stream-json` đi kèm khi input là stream-json (không dùng được với
+`json`), nên cả lượt không-stream cũng chạy stream-json nội bộ rồi mới gom lại trả 1 JSON.
+
 ### Vì sao phải là hộp kín
 
 Prompt của bên thứ ba chạy qua CÙNG một CLI `claude` với các console nội bộ, nên nếu không bó lại thì
-họ thừa hưởng nguyên bộ ngữ cảnh của máy này. `lib/publicApi.js` chặn từng đường:
+họ thừa hưởng nguyên bộ ngữ cảnh của máy này. `lib/publicApi.js` chặn từng đường (áp dụng cho CẢ hai
+route):
 
 | Ràng buộc                      | Cờ                          | Lý do                                                                                       |
 |--------------------------------|-----------------------------|---------------------------------------------------------------------------------------------|
@@ -460,10 +509,12 @@ vào UI, nên `proxy.js` miễn `/api/v1` khỏi Basic Auth và route tự kiể
 
 ### Hạn mức
 
-Đếm theo NHÃN khách, trong RAM của tiến trình Next (app restart thì reset — đây là van an toàn quota
-Claude, không phải billing): `PUBLIC_API_RATE_PER_MIN` (10), `PUBLIC_API_RATE_PER_DAY` (200),
-`PUBLIC_API_MAX_CONCURRENT` (2), `PUBLIC_API_MAX_PROMPT` (8000 ký tự), `PUBLIC_API_TIMEOUT_MS`
-(300000). Vượt → 429 kèm `Retry-After`; mỗi phản hồi có `X-RateLimit-Remaining-Minute/-Day`.
+Đếm theo NHÃN khách, DÙNG CHUNG giữa `/generate` và `/vision` (gọi route nào cũng trừ vào cùng một
+bộ đếm), trong RAM của tiến trình Next (app restart thì reset — đây là van an toàn quota Claude,
+không phải billing): `PUBLIC_API_RATE_PER_MIN` (10), `PUBLIC_API_RATE_PER_DAY` (200),
+`PUBLIC_API_MAX_CONCURRENT` (2), `PUBLIC_API_MAX_PROMPT` (8000 ký tự), `PUBLIC_API_MAX_IMAGE_MB`
+(15, riêng `/vision`), `PUBLIC_API_TIMEOUT_MS` (300000). Vượt → 429 kèm `Retry-After`; mỗi phản hồi
+có `X-RateLimit-Remaining-Minute/-Day`.
 
 ### Tự đổi account Claude
 

@@ -30,7 +30,20 @@ export const LIMITS = {
   concurrent: () => num(process.env.PUBLIC_API_MAX_CONCURRENT, 2),
   maxPromptChars: () => num(process.env.PUBLIC_API_MAX_PROMPT, 8000),
   timeoutMs: () => num(process.env.PUBLIC_API_TIMEOUT_MS, 300000),
+  maxImageMB: () => num(process.env.PUBLIC_API_MAX_IMAGE_MB, 15),
+  maxImageBytes: () => num(process.env.PUBLIC_API_MAX_IMAGE_MB, 15) * 1024 * 1024,
 };
+
+// Media type ảnh mà Claude API thực sự nhận trong content block (base64 inline): chỉ 4 loại này.
+// BMP/SVG (dù /api/chat/upload nội bộ nhận) KHÔNG được vision API hỗ trợ trực tiếp nên bị từ chối
+// ở đây thay vì để lỗi mập mờ từ phía model.
+const IMAGE_MEDIA_TYPES = new Map([
+  ["image/png", "image/png"],
+  ["image/jpeg", "image/jpeg"],
+  ["image/jpg", "image/jpeg"],
+  ["image/gif", "image/gif"],
+  ["image/webp", "image/webp"],
+]);
 
 // Model bên thứ ba được chọn. Chỉ nhận alias, không nhận model id đầy đủ: người gọi không cần biết
 // tên nội bộ, và whitelist chặn việc gọi sang model đắt hơn mức ta muốn mở.
@@ -161,6 +174,39 @@ export function parseInput(body) {
   return { ok: true, input: { prompt, model, effort, system, stream: body.stream === true || body.stream === "1" } };
 }
 
+// Validate + đọc tệp ảnh từ multipart form-data cho /api/v1/vision. → { ok, input } | { error }
+export async function parseVisionInput(form) {
+  const promptRaw = form.get("prompt");
+  const prompt = typeof promptRaw === "string" ? promptRaw.trim() : "";
+  if (!prompt) return { error: "Thiếu `prompt`." };
+  const cap = LIMITS.maxPromptChars();
+  if (prompt.length > cap) return { error: `\`prompt\` dài ${prompt.length} ký tự, trần là ${cap}.` };
+
+  const file = form.get("image");
+  if (!(file instanceof File) || file.size === 0) return { error: "Thiếu tệp `image`." };
+  const maxBytes = LIMITS.maxImageBytes();
+  if (file.size > maxBytes) {
+    return { error: `Ảnh quá lớn (${(file.size / 1024 / 1024).toFixed(1)}MB), trần là ${LIMITS.maxImageMB()}MB.` };
+  }
+  const mediaType = IMAGE_MEDIA_TYPES.get(String(file.type || "").toLowerCase());
+  if (!mediaType) return { error: "Chỉ hỗ trợ ảnh PNG/JPEG/GIF/WEBP." };
+
+  const model = form.get("model") == null ? DEFAULT_MODEL() : String(form.get("model"));
+  if (!MODELS.includes(model)) return { error: `\`model\` phải là một trong: ${MODELS.join(", ")}.` };
+
+  const effort = form.get("effort") == null ? "low" : String(form.get("effort"));
+  if (!EFFORTS.includes(effort)) return { error: `\`effort\` phải là một trong: ${EFFORTS.join(", ")}.` };
+
+  const systemRaw = form.get("system");
+  const system = typeof systemRaw === "string" ? systemRaw.trim().slice(0, 4000) : "";
+
+  const streamRaw = form.get("stream");
+  const stream = streamRaw === "true" || streamRaw === "1";
+
+  const imageBase64 = Buffer.from(await file.arrayBuffer()).toString("base64");
+  return { ok: true, input: { prompt, model, effort, system, stream, mediaType, imageBase64 } };
+}
+
 function buildArgv({ prompt, model, effort, system, stream }) {
   return [
     "-p", prompt,
@@ -209,6 +255,278 @@ async function pickEnv() {
 
 function spawnClaude(argv, env) {
   return spawn("claude", argv, { cwd: sandboxCwd(), env, stdio: ["ignore", "pipe", "pipe"] });
+}
+
+// ─── Vision (/api/v1/vision) ───────────────────────────────────────────────────────────────────
+// Ảnh không đi qua tool Read (sẽ phải bật Read cho hộp kín — Read đọc được BẤT KỲ file nào trên máy,
+// không chỉ trong cwd, nên mở cửa đó cho bên thứ ba là rò dữ liệu nội bộ). Thay vào đó ảnh được gửi
+// thẳng trong NỘI DUNG tin nhắn qua stdin (`--input-format stream-json`), đúng cách Messages API
+// nhận content block kiểu "image" — độc lập với việc có tool nào được bật hay không. Đã kiểm chứng
+// thủ công: CLI bắt buộc `--output-format stream-json` đi kèm (không dùng được với "json") khi input
+// là stream-json.
+const VISION_SYSTEM_PROMPT = SYSTEM_PROMPT + " Ảnh do người gọi đính kèm trong tin nhắn — đọc nội dung ảnh (chữ, bảng, biểu đồ…) rồi thực hiện đúng yêu cầu trong prompt.";
+
+function buildVisionArgv({ model, effort, system }) {
+  return [
+    "-p",
+    "--model", model,
+    "--effort", effort,
+    "--tools", "",
+    "--strict-mcp-config",
+    "--setting-sources", "",
+    "--permission-prompts", "none",
+    "--no-session-persistence",
+    "--system-prompt", VISION_SYSTEM_PROMPT + (system ? "\n\nYêu cầu thêm từ người gọi:\n" + system : ""),
+    "--input-format", "stream-json",
+    "--output-format", "stream-json",
+    "--include-partial-messages",
+    "--verbose",
+  ];
+}
+
+function buildVisionStdin({ prompt, mediaType, imageBase64 }) {
+  return JSON.stringify({
+    type: "user",
+    message: {
+      role: "user",
+      content: [
+        { type: "text", text: prompt },
+        { type: "image", source: { type: "base64", media_type: mediaType, data: imageBase64 } },
+      ],
+    },
+    parent_tool_use_id: null,
+  }) + "\n";
+}
+
+function spawnClaudeStdin(argv, env) {
+  return spawn("claude", argv, { cwd: sandboxCwd(), env, stdio: ["pipe", "pipe", "pipe"] });
+}
+
+// Lượt không-stream cũng phải chạy CLI ở chế độ stream-json (bắt buộc do input stream-json), chỉ
+// khác là gom hết rồi trả 1 JSON, không đẩy SSE. Dòng cuối cùng của stdout luôn là event "result".
+function runVisionOnce(argv, env, acct, stdinPayload) {
+  return new Promise((resolve) => {
+    const child = spawnClaudeStdin(argv, env);
+    let stdout = "", stderr = "", done = false;
+    const finish = (v) => { if (!done) { done = true; clearTimeout(timer); resolve(v); } };
+
+    const timer = setTimeout(() => {
+      try { child.kill("SIGTERM"); } catch {}
+      setTimeout(() => { try { child.kill("SIGKILL"); } catch {} }, 5000);
+      finish({ ok: false, status: 504, error: `Quá thời gian cho phép (${Math.round(LIMITS.timeoutMs() / 1000)}s).` });
+    }, LIMITS.timeoutMs());
+
+    child.stdout.on("data", (d) => { stdout += d.toString("utf8"); });
+    child.stderr.on("data", (d) => { stderr += d.toString("utf8"); });
+    child.on("error", (e) => finish({ ok: false, status: 500, error: "Không chạy được claude: " + e.message }));
+    child.on("close", () => {
+      let res = null;
+      try { res = JSON.parse(stdout.trim().split("\n").filter(Boolean).pop() || "null"); } catch {}
+      if (!res || res.type !== "result") {
+        finish({
+          ok: false,
+          status: 502,
+          error: "Claude không trả về kết quả." + (stderr ? " " + stderr.trim().slice(0, 300) : ""),
+          accountFailed: noteAccountFailure(acct, { stderr }),
+        });
+        return;
+      }
+      if (res.is_error) {
+        finish({
+          ok: false,
+          status: 502,
+          error: String(res.result || "Lượt chạy lỗi.").slice(0, 500),
+          accountFailed: noteAccountFailure(acct, { resultText: res.result, apiErrorStatus: res.api_error_status, stderr }),
+        });
+        return;
+      }
+      finish({
+        ok: true,
+        text: String(res.result ?? ""),
+        usage: {
+          input_tokens: res.usage?.input_tokens ?? null,
+          output_tokens: res.usage?.output_tokens ?? null,
+          duration_ms: res.duration_ms ?? null,
+        },
+      });
+    });
+    try { child.stdin.write(stdinPayload); child.stdin.end(); } catch (e) { finish({ ok: false, status: 500, error: "Không gửi được ảnh: " + e.message }); }
+  });
+}
+
+export async function generateVision(input) {
+  const argv = buildVisionArgv(input);
+  const stdinPayload = buildVisionStdin(input);
+  const first = await pickEnv();
+  let out = await runVisionOnce(argv, first.env, first.acct, stdinPayload);
+
+  if (out.accountFailed) {
+    const fb = await fallbackAccount(null, null, first.acct, out.accountFailed, CONSOLE_KEY);
+    if (fb) out = await runVisionOnce(argv, fb.env, fb.acct, stdinPayload);
+  }
+  return out;
+}
+
+// SSE cho vision — cùng hợp đồng event (`delta`/`done`/`error`) và cơ chế đổi account giữa lượt như
+// generateStream(); khác mỗi chỗ spawn: stdin cần pipe thật (ảnh gửi qua stdin, không qua argv).
+export async function generateVisionStream(input, { onFinish } = {}) {
+  const argv = buildVisionArgv(input);
+  const stdinPayload = buildVisionStdin(input);
+  const first = await pickEnv();
+  const encoder = new TextEncoder();
+
+  return new ReadableStream({
+    start(controller) {
+      let closed = false;
+      const send = (event, data) => {
+        if (closed) return;
+        try { controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)); }
+        catch { closed = true; }
+      };
+
+      let child = null;
+      let acct = first.acct;
+      let spawns = 0;
+      let timedOut = false;
+      let flushed = false;
+
+      let buf, streamed, gotResult, head, probation, pendingError, accountFailed, stderr;
+      const resetRun = () => {
+        buf = ""; streamed = false; gotResult = false;
+        head = ""; probation = true;
+        pendingError = null; accountFailed = null; stderr = "";
+      };
+      resetRun();
+
+      const hb = setInterval(() => { try { controller.enqueue(encoder.encode(":hb\n\n")); } catch {} }, 15000);
+      const timer = setTimeout(() => {
+        timedOut = true;
+        send("error", { error: `Quá thời gian cho phép (${Math.round(LIMITS.timeoutMs() / 1000)}s).` });
+        try { child.kill("SIGTERM"); } catch {}
+        setTimeout(() => { try { child.kill("SIGKILL"); } catch {} }, 5000);
+      }, LIMITS.timeoutMs());
+
+      const end = () => {
+        if (closed) return;
+        clearInterval(hb);
+        clearTimeout(timer);
+        closed = true;
+        try { controller.close(); } catch {}
+        if (onFinish) { try { onFinish(); } catch {} }
+      };
+
+      const flushHead = () => {
+        probation = false;
+        if (!head) return;
+        send("delta", { text: head });
+        head = "";
+        flushed = true;
+      };
+
+      const feed = (text) => {
+        if (!text) return;
+        if (probation) {
+          head += text;
+          if (head.length >= PROBATION_CHARS) flushHead();
+          return;
+        }
+        send("delta", { text });
+        flushed = true;
+      };
+
+      const onLine = (evt) => {
+        if (evt.type === "stream_event") {
+          const e = evt.event || {};
+          if (e.type === "content_block_delta" && e.delta?.type === "text_delta" && e.delta.text) {
+            streamed = true;
+            feed(e.delta.text);
+          }
+        } else if (evt.type === "assistant" && !streamed) {
+          for (const b of evt.message?.content || []) if (b.type === "text" && b.text) feed(b.text);
+        } else if (evt.type === "rate_limit_event") {
+          if (isLimitBlocked(evt.rate_limit_info || {})) {
+            markAccountExhausted(acct, "publicapi: rate_limit_event rejected");
+            accountFailed = "hết hạn mức";
+          }
+        } else if (evt.type === "result") {
+          gotResult = true;
+          if (evt.is_error) {
+            pendingError = String(evt.result || "Lượt chạy lỗi.").slice(0, 500);
+            accountFailed =
+              noteAccountFailure(acct, { resultText: evt.result, apiErrorStatus: evt.api_error_status, stderr }) ||
+              accountFailed;
+          } else {
+            flushHead();
+            send("done", {
+              usage: {
+                input_tokens: evt.usage?.input_tokens ?? null,
+                output_tokens: evt.usage?.output_tokens ?? null,
+                duration_ms: evt.duration_ms ?? null,
+              },
+            });
+          }
+        }
+      };
+
+      const onChildClose = async () => {
+        if (closed || timedOut) { end(); return; }
+
+        if (accountFailed && !flushed && spawns < MAX_SPAWNS) {
+          const fb = await fallbackAccount(null, null, acct, accountFailed, CONSOLE_KEY);
+          if (fb) {
+            acct = fb.acct;
+            resetRun();
+            if (launch(fb.env)) return;
+            return;
+          }
+        }
+
+        head = "";
+        if (pendingError) send("error", { error: pendingError });
+        else if (!gotResult) send("error", { error: "Lượt chạy kết thúc bất thường." + (stderr ? " " + stderr.trim().slice(0, 300) : "") });
+        end();
+      };
+
+      const launch = (env) => {
+        spawns++;
+        try {
+          child = spawnClaudeStdin(argv, env);
+        } catch (e) {
+          send("error", { error: "Không chạy được claude: " + e.message });
+          end();
+          return false;
+        }
+        this._child = child;
+
+        child.stdout.on("data", (chunk) => {
+          buf += chunk.toString("utf8");
+          let nl;
+          while ((nl = buf.indexOf("\n")) >= 0) {
+            const line = buf.slice(0, nl).trim();
+            buf = buf.slice(nl + 1);
+            if (!line) continue;
+            let evt;
+            try { evt = JSON.parse(line); } catch { continue; }
+            onLine(evt);
+          }
+        });
+        child.stderr.on("data", (d) => {
+          const text = d.toString("utf8");
+          stderr += text;
+          accountFailed = noteAccountFailure(acct, { stderr: text }) || accountFailed;
+        });
+        child.on("error", (e) => { send("error", { error: "Không chạy được claude: " + e.message }); end(); });
+        child.on("close", () => { onChildClose(); });
+        try { child.stdin.write(stdinPayload); child.stdin.end(); } catch {}
+        return true;
+      };
+
+      launch(first.env);
+    },
+    cancel() {
+      if (this._child && this._child.exitCode === null) this._child.kill("SIGTERM");
+    },
+  });
 }
 
 // Chạy 1 lượt, trả JSON gọn cho người gọi. Lượt chết vì lỗi THUỘC ACCOUNT (hết hạn mức / org chặn)

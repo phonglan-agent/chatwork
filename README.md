@@ -77,7 +77,7 @@ npm install
 npm run build && npm run start   # http://127.0.0.1:5000
 ```
 
-See [§8](#8-web-ui-auto-mode) for the UI features and `ui-next/README.md` for pm2 / ngrok details.
+See [§8](#8-web-ui) for the UI features and `ui-next/README.md` for pm2 / ngrok details.
 
 ---
 
@@ -116,7 +116,7 @@ Add `--dry-run` to any script to preview the commands without executing.
 | `memory/`             | `architecture`, `coding_style`, `database`, `deployment`, `common_bugs`, `jira_history` |
 | `scripts/`            | `fix-ticket`, `create-pr`, `update-jira` (+ `_lib` helpers), `share-projects.sh`         |
 | `templates/`          | `pr_template`, `jira_comment`, `commit_message`                                         |
-| `ui-next/`            | Next.js web UI (auto mode + chat) — see [§8](#8-web-ui-auto-mode)                       |
+| `ui-next/`            | Next.js web UI (chat, release, rebase, report, investigate, evidence, kloc, translate) — see [§8](#8-web-ui) |
 
 ---
 
