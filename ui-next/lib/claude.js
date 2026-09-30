@@ -11,6 +11,8 @@ const SCRIPTS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const SNAPSHOT_SCRIPT = path.join(SCRIPTS_DIR, "snapshot.mjs");
 // Debug helper (ui-next/scripts/debug.mjs) — console log + network + flow click/type qua CDP.
 const DEBUG_SCRIPT = path.join(SCRIPTS_DIR, "debug.mjs");
+// Publish helper (ui-next/scripts/publish-file.mjs) — chép PDF/XLSX vào .downloads/ để tải từ chat.
+const PUBLISH_SCRIPT = path.join(SCRIPTS_DIR, "publish-file.mjs");
 
 // Instruction (edit-mode only) telling the agent to screenshot the running app when the user asks to
 // "check on web / xem giao diện", save it under public/, and embed it in the answer as Markdown so it
@@ -39,6 +41,25 @@ function snapshotInstr(defaultUrl) {
 // Instruction (edit-mode only): lỗi RUNTIME của trang (trang trắng, bấm không phản ứng, request lỗi,
 // state sai) không đọc code mà đoán được — debug.mjs chạy trang thật qua CDP và trả về console log,
 // network, exception, kết quả eval. `defaultUrl` là cổng dev cố định của project ("" = mode free).
+// Instruction (Bash-enabled modes only): the chat UI is opened from a browser (often via ngrok on
+// mobile), so a file:// link or a local path is NOT downloadable. PDF/XLSX must be published through
+// scripts/publish-file.mjs → app/api/download/[name], then linked as Markdown.
+function downloadInstr() {
+  return (
+    "GỬI FILE ĐỂ NGƯỜI DÙNG TẢI VỀ (PDF/XLSX) — QUY TẮC BẮT BUỘC, ưu tiên hơn mọi cách làm trước đó trong " +
+    "phiên: người dùng mở khung chat bằng trình duyệt, thường qua ngrok trên máy khác/điện thoại, nên link " +
+    "`file://...` hay đường dẫn trên máy KHÔNG tải được — CẤM dùng. Cũng KHÔNG tải file lên Google Drive/rclone " +
+    "hay dịch vụ ngoài nào để lấy link (file có thể chứa dữ liệu cá nhân), trừ khi người dùng NÓI RÕ tên " +
+    "Drive/dịch vụ đó. Mỗi khi người dùng xin link / tải về / download / gửi file .pdf hoặc .xlsx (kể cả file " +
+    "bạn vừa tạo/sửa, kể cả khi trước đó trong phiên đã đưa link kiểu khác), chạy lệnh Bash:\n" +
+    `  node ${PUBLISH_SCRIPT} <đường-dẫn-file> [--name ten-ngan]\n` +
+    "Lệnh in ra đường dẫn tải ở dòng cuối stdout (vd `/api/download/xxx.pdf`). Chèn NGUYÊN đường dẫn đó " +
+    "vào câu trả lời dạng link Markdown `[Tải <tên file>](<đường dẫn vừa in>)` — KHÔNG tự thêm/bớt tiền tố. " +
+    "Mỗi lần sửa file xong mà cần tải lại thì publish lại để có link mới. Định dạng khác pdf/xlsx chưa hỗ trợ — " +
+    "báo người dùng thay vì đưa đường dẫn trên máy."
+  );
+}
+
 function debugInstr(defaultUrl) {
   return (
     "DEBUG TRANG WEB (console + network): khi lỗi xảy ra LÚC CHẠY — trang trắng, bấm không phản ứng, " +
@@ -269,6 +290,7 @@ function chatSystemPrompt(project, canEdit) {
       PM2_OPS_SAFETY,
       snapshotInstr(""),
       debugInstr(""),
+      downloadInstr(),
       TABLE_INSTR,
       WORDING_INSTR,
       SUGGEST_INSTR,
@@ -286,6 +308,7 @@ function chatSystemPrompt(project, canEdit) {
       NO_DEGRADE_SAFETY,
       snapshotInstr("http://localhost:5173"),
       debugInstr("http://localhost:5173"),
+      downloadInstr(),
       rezilTemplatesInstr()
     );
   } else {

@@ -40,6 +40,7 @@ export default function Chat({ initialProject }) {
   const config = {
     apiPath: "/api/chat",
     uploadPath: "/api/chat/upload",
+    uploadAny: project === "free", // free: đính kèm mọi loại tệp (PDF/Word/…); server cũng chỉ mở cho free
     sessionsPath: "/api/sessions",
     storageKey: "chat:" + project,
     accent: p.accent,

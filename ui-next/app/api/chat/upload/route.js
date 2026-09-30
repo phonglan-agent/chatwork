@@ -1,6 +1,7 @@
 // File upload for the chat console. Saves under .ai-uploads/ inside the chatted project's cwd
 // (rezil | free) so the agent — which runs with that cwd — can Read it via a relative path.
-// Accepts images and Excel, stored verbatim (the agent's Read parses them). See lib/upload.js.
+// Accepts images and Excel, stored verbatim (the agent's Read parses them); project "free" accepts
+// any file type. See lib/upload.js.
 // Gating is handled by the proxy Basic Auth.
 import { resolveProject, normalizeProject } from "../../../../lib/config.js";
 import { saveUpload } from "../../../../lib/upload.js";
@@ -21,7 +22,7 @@ export async function POST(req) {
 
   try {
     const proj = resolveProject(project);
-    const meta = await saveUpload(form.get("file"), proj.cwd);
+    const meta = await saveUpload(form.get("file"), proj.cwd, { anyType: project === "free" });
     return Response.json(meta);
   } catch (e) {
     return Response.json({ error: e.message || "Tải lên thất bại" }, { status: e.status || 500 });

@@ -3,6 +3,8 @@
 // the agent's Read tool parses them directly:
 //   - images (png/jpg/gif/webp/bmp/svg)  → Read renders the image.
 //   - Excel (.xlsx/.xls)                 → Read parses the workbook directly (no server-side convert).
+// `anyType` (project "free" only): skip the kind check — PDF/Word/… too. That agent has Bash, so it
+// converts whatever Read can't parse (e.g. .docx via libreoffice) on its own.
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -36,7 +38,7 @@ function isExcel(file) {
 
 // Validate + persist one uploaded File under `<cwd>/.ai-uploads/`. Returns the metadata the client
 // appends to the next prompt; throws an Error with a `.status` for the route to surface.
-export async function saveUpload(file, cwd) {
+export async function saveUpload(file, cwd, { anyType = false } = {}) {
   if (!(file instanceof File) || file.size === 0) {
     throw Object.assign(new Error("Thiếu tệp tải lên"), { status: 400 });
   }
@@ -44,7 +46,7 @@ export async function saveUpload(file, cwd) {
     throw Object.assign(new Error("Tệp quá lớn (tối đa 15MB)"), { status: 400 });
   }
   const excel = isExcel(file);
-  if (!IMAGE_TYPES.has(file.type) && !excel) {
+  if (!anyType && !IMAGE_TYPES.has(file.type) && !excel) {
     throw Object.assign(
       new Error("Chỉ hỗ trợ ảnh và Excel (.xlsx/.xls)"),
       { status: 400 }

@@ -712,6 +712,7 @@ export default function AgentConsole({ config }) {
   // Accepted attachment kinds: images, Excel. Anything else is dropped client-side so the user
   // gets the picker filter + a clean send.
   const isUploadable = (f) =>
+    config.uploadAny ||
     f.type.startsWith("image/") ||
     /\.(xlsx?|xlsm|xlsb)$/i.test(f.name || "") ||
     f.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
@@ -781,7 +782,10 @@ export default function AgentConsole({ config }) {
     let q = typed;
     if (attachments.length > 0) {
       const lines = attachments.map((x) => `- ${x.path} (${x.name})`).join("\n");
-      q = `${typed}\n\nTệp đính kèm (đọc bằng tool Read):\n${lines}`.trim();
+      const how = config.uploadAny
+        ? "đọc bằng tool Read; loại Read không đọc được như .doc/.docx thì tự chuyển đổi bằng Bash, vd libreoffice --headless --convert-to pdf"
+        : "đọc bằng tool Read";
+      q = `${typed}\n\nTệp đính kèm (${how}):\n${lines}`.trim();
     }
     const display = attachments.length > 0 ? `${typed} 📎${attachments.length}`.trim() : typed;
     // runId: định danh lượt chạy → server đăng ký job-lock để (1) nút Dừng huỷ được kể cả sau khi
@@ -1117,7 +1121,7 @@ export default function AgentConsole({ config }) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*,.xlsx,.xls,.xlsm,.xlsb"
+                  accept={config.uploadAny ? undefined : "image/*,.xlsx,.xls,.xlsm,.xlsb"}
                   multiple
                   className="hidden"
                   onChange={(e) => uploadFiles(e.target.files)}
@@ -1126,7 +1130,7 @@ export default function AgentConsole({ config }) {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={busy || uploading}
-                  title="Đính kèm tệp (ảnh / Excel)"
+                  title={config.uploadAny ? "Đính kèm tệp (mọi loại: PDF / Word / Excel / ảnh…)" : "Đính kèm tệp (ảnh / Excel)"}
                   aria-label="Đính kèm tệp"
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
                 >
