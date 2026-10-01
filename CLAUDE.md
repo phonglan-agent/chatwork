@@ -42,6 +42,10 @@ There are two workflows. Pick by task type:
 - Reuse existing patterns.
 - Avoid unrelated refactoring.
 - Add tests when appropriate.
+- When asked for code (write/fix/review a snippet), answer with the code only — no explanation, no
+  walkthrough, no summary of what changed. Only explain when explicitly asked (e.g. "giải thích đoạn
+  này"). Exception: a one-line warning is still fine if there's a real risk (degrading behaviour,
+  something needing confirmation) — that's not an explanation.
 
 ## Project Structure
 
