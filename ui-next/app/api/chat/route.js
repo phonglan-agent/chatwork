@@ -69,6 +69,8 @@ export async function GET(req) {
     // Keep the run alive if the client tab is hidden/minimized (socket drops); it finishes and is
     // saved to the session .jsonl so a reconnecting client can reload the answer. See lib/claude.js.
     killOnDisconnect: false,
+    // Đệm event theo runId để client đứt kết nối nối lại được qua /api/chat/resume (lib/runStreams.js).
+    replayKey: runId || undefined,
     // Register in the shared job-lock under runId so the Dừng button (/api/cancel?repo=runId) and
     // the /api/chat/active status check can find this run even after a disconnect.
     onSpawn: runId ? (child) => running.set(runId, { child, label: "chat" }) : undefined,

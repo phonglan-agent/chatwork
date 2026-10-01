@@ -77,6 +77,8 @@ export async function GET(req) {
     notice: chosen.notice,
     onSession: true,
     killOnDisconnect: false,
+    // Đệm event theo runId để client đứt kết nối nối lại được qua /api/chat/resume (lib/runStreams.js).
+    replayKey: runId || undefined,
     onSpawn: runId ? (child) => running.set(runId, { child, label: "kloc" }) : undefined,
     onClose: runId ? () => { running.delete(runId); } : undefined,
     retry: async () => {

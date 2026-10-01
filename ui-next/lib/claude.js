@@ -4,6 +4,7 @@ import { spawn } from "child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { resolveProject, normalizeProject, ROOT } from "./config.js";
+import { openRunStream, pushRunEvent, closeRunStream } from "./runStreams.js";
 
 // Absolute path to the screenshot helper (ui-next/scripts/snapshot.mjs). The chat agent runs in a
 // sibling repo's cwd, so it needs the full path to invoke the script via Bash.
@@ -535,6 +536,9 @@ export function handleEvent(evt, emit, state) {
 //   ACCOUNT (org tắt Claude Code, hết hạn mức) — không có nó thì lượt đầu tiên gặp lỗi luôn hỏng và
 //   người dùng phải gửi lại. Caller tự quyết khi nào đáng retry (xem app/api/chat/route.js).
 //   Tối đa MAX_SPAWNS lần spawn cho mỗi lượt để không lặp vô hạn.
+// replayKey: runId của lượt. Có giá trị thì mỗi event được đánh `id:` tăng dần và ghi vào bộ đệm
+//   lib/runStreams.js, để client đứt kết nối giữa lượt nối lại qua /api/chat/resume (phát lại từ id
+//   cuối đã nhận). Bỏ trống = hành vi cũ, không đệm. Chỉ dùng cùng killOnDisconnect:false.
 // Trần thời gian 1 lệnh Bash của agent. CLI mặc định chặn ở 600000ms (10 phút) — job của console
 // (build gradle, test suite, upload cả batch lên Drive) hay vượt mức đó và chết giữa lệnh, mất luôn
 // phần việc đang làm. Nâng trần lên 1200000ms (20 phút); mức mặc định mỗi lệnh vẫn là 120s, agent
@@ -544,7 +548,7 @@ function agentEnv(base) {
   return base.BASH_MAX_TIMEOUT_MS ? base : { ...base, BASH_MAX_TIMEOUT_MS };
 }
 
-export function claudeSSE({ cwd, argv, env, notice, onSession, onSpawn, onClose, onEvent, timeoutMs, killOnDisconnect = true, hideSubagentText = false, retry }) {
+export function claudeSSE({ cwd, argv, env, notice, onSession, onSpawn, onClose, onEvent, timeoutMs, killOnDisconnect = true, hideSubagentText = false, retry, replayKey }) {
   const encoder = new TextEncoder();
   return new ReadableStream({
     start(controller) {
@@ -552,11 +556,14 @@ export function claudeSSE({ cwd, argv, env, notice, onSession, onSpawn, onClose,
       // That fires from async stdout handlers → uncaughtException → can crash the worker. Guard every
       // write behind a closed flag + try/catch so a late emit is a no-op, never a crash.
       let streamClosed = false;
+      if (replayKey) openRunStream(replayKey);
       const emit = (event, data) => {
         if (onEvent) { try { onEvent(event, data); } catch {} }
+        // Ghi bộ đệm TRƯỚC khi xét streamClosed: client đã đứt vẫn cần các event này lúc nối lại.
+        const id = replayKey ? pushRunEvent(replayKey, event, data) : 0;
         if (streamClosed) return;
         try {
-          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+          controller.enqueue(encoder.encode(`${id ? `id: ${id}\n` : ""}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
         } catch { streamClosed = true; }
       };
       try { controller.enqueue(encoder.encode(":ok\n\n")); } catch { streamClosed = true; }
@@ -596,6 +603,7 @@ export function claudeSSE({ cwd, argv, env, notice, onSession, onSpawn, onClose,
         if (killHard) clearTimeout(killHard);
         flushSuggest(state, emit); // flush held-back text + emit any follow-up suggestions
         emit("end", {});
+        if (replayKey) closeRunStream(replayKey);
         try { controller.close(); } catch {}
         streamClosed = true;
       };

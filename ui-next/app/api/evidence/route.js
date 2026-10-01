@@ -96,6 +96,8 @@ export async function GET(req) {
     notice: [plan.notice, chosen.notice].filter(Boolean).join(" · "),
     onSession: true,
     killOnDisconnect: false,
+    // Đệm event theo runId để client đứt kết nối nối lại được qua /api/chat/resume (lib/runStreams.js).
+    replayKey: runId || undefined,
     onSpawn: runId ? (child) => running.set(runId, { child, label: "evidence" }) : undefined,
     onClose: runId ? () => { running.delete(runId); } : undefined,
     // Chạy lại trong cùng lượt khi account vừa dùng không dùng được nữa (xem app/api/chat/route.js).

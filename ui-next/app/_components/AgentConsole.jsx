@@ -226,8 +226,10 @@ function Lightbox({ src, onClose }) {
 // config.sessionsPath và config.reconnect là HAI thứ khác nhau, đừng gộp:
 //   - sessionsPath: bật panel "Phiên đã lưu" (liệt kê / mở lại / xoá phiên .jsonl). Console nào cũng
 //     dùng được — chỉ cần đọc file, không đòi hỏi gì ở route.
-//   - reconnect: khi rớt stream thì poll /api/chat/active rồi lấy đáp án từ .jsonl. CHỈ đúng với
-//     console mà route chạy killOnDisconnect:false + đăng ký runId vào job-lock (/api/chat, /api/evidence, /api/release).
+//   - reconnect: khi rớt stream thì nối lại qua /api/chat/resume (route phải truyền replayKey: runId
+//     cho claudeSSE), không được thì poll /api/chat/active rồi lấy đáp án từ .jsonl. CHỈ đúng với
+//     console mà route chạy killOnDisconnect:false + đăng ký runId vào job-lock (/api/chat, /api/evidence,
+//     /api/release, /api/kloc, /api/translate).
 //     Bật cho console khác sẽ báo "đã khôi phục" trong khi run thật ra đã bị kill lúc socket đứt.
 // Shared multi-turn console for every agent UI. Two modes via config.mode:
 //   - "chat" (default): free text input (+ optional ✏️ Sửa code toggle), session resume — /chat, /release.
@@ -340,6 +342,8 @@ export default function AgentConsole({ config }) {
   const flushTimerRef = useRef(null);
   const cancelKeyRef = useRef(""); // chat: = runId (job-lock key); job: = repo cancel key
   const reconnectingRef = useRef(false); // chat: đang poll khôi phục sau khi mất kết nối
+  const lastEventIdRef = useRef(0); // id SSE cuối đã nhận (server đánh id khi có replayKey) — mốc nối lại
+  const resumeCountRef = useRef(0); // số lần đã nối lại stream trong lượt hiện tại (chặn lặp vô hạn)
   // Completion-sound bookkeeping per turn: error seen? user-aborted? already chimed?
   const sawErrorRef = useRef(false);
   const abortedRef = useRef(false);
@@ -377,7 +381,7 @@ export default function AgentConsole({ config }) {
       if (document.visibilityState !== "visible") return;
       if (!busy || isJob || !config.reconnect || reconnectingRef.current || abortedRef.current) return;
       const es = esRef.current;
-      if (!es || es.readyState === 2) reconnectAndReload();
+      if (!es || es.readyState === 2) resumeStream();
     };
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
@@ -618,6 +622,41 @@ export default function AgentConsole({ config }) {
     finalizeSound();
   }
 
+  // Chat: kết nối đứt giữa lượt → NỐI LẠI stream qua /api/chat/resume, phát lại từ id cuối đã nhận
+  // (server đệm event theo runId — lib/runStreams.js), chữ + tiến trình chạy tiếp như chưa từng đứt.
+  // Server không còn bộ đệm (app vừa restart) hoặc nối lại quá nhiều lần → quay về reconnectAndReload.
+  const MAX_RESUMES = 30;
+  const RESUME_STATUS = "↻ mất kết nối — đang nối lại…";
+  async function resumeStream() {
+    if (reconnectingRef.current || abortedRef.current || isJob || !config.reconnect) return;
+    const rid = cancelKeyRef.current;
+    if (!rid || resumeCountRef.current >= MAX_RESUMES) { reconnectAndReload(); return; }
+    reconnectingRef.current = true;
+    flushDelta();
+    patchLast((m) => (m.role === "ai" ? { ...m, status: RESUME_STATUS } : m));
+    let resumable = false;
+    for (let miss = 0; miss <= 30 && !abortedRef.current; miss++) { // mạng chưa lên lại → chờ tối đa ~60s
+      try {
+        const r = await fetch(BASE + "/api/chat/active?runId=" + encodeURIComponent(rid));
+        const d = await r.json();
+        resumable = !!d.resumable;
+        break;
+      } catch {
+        await new Promise((res) => setTimeout(res, 2000));
+      }
+    }
+    reconnectingRef.current = false;
+    if (abortedRef.current) return;
+    if (!resumable) { reconnectAndReload(); return; }
+    resumeCountRef.current++;
+    patchLast((m) => (m.role === "ai" && m.status === RESUME_STATUS ? { ...m, status: "" } : m));
+    const es = new EventSource(
+      BASE + "/api/chat/resume?runId=" + encodeURIComponent(rid) + "&from=" + lastEventIdRef.current
+    );
+    esRef.current = es;
+    attachStream(es);
+  }
+
   function watchNeedInfo(t) {
     if (needInfoRef.current) return;
     accRef.current += t;
@@ -642,6 +681,8 @@ export default function AgentConsole({ config }) {
     abortedRef.current = false;
     soundedRef.current = false;
     reconnectingRef.current = false;
+    lastEventIdRef.current = 0;
+    resumeCountRef.current = 0;
     setSuggests([]);
     setMessages((prev) => [
       ...prev,
@@ -652,14 +693,26 @@ export default function AgentConsole({ config }) {
 
     const es = new EventSource(BASE + url);
     esRef.current = es;
+    attachStream(es);
+  }
 
-    es.addEventListener("session", (ev) => { sessionRef.current = JSON.parse(ev.data); });
-    es.addEventListener("delta", (ev) => {
+  // Gắn handler cho một EventSource của lượt hiện tại — dùng cho cả stream gốc lẫn stream nối lại.
+  function attachStream(es) {
+    // Bọc addEventListener để ghi lại id SSE cuối (mốc `from` khi nối lại). Event không có id (route
+    // không bật replayKey) thì lastEventId rỗng → giữ nguyên mốc cũ.
+    const on = (name, fn) =>
+      es.addEventListener(name, (ev) => {
+        const id = parseInt(ev.lastEventId, 10);
+        if (id > lastEventIdRef.current) lastEventIdRef.current = id;
+        fn(ev);
+      });
+    on("session", (ev) => { sessionRef.current = JSON.parse(ev.data); });
+    on("delta", (ev) => {
       const t = JSON.parse(ev.data);
       pushDelta(t);
       watchNeedInfo(t);
     });
-    es.addEventListener("tool", (ev) => {
+    on("tool", (ev) => {
       const name = JSON.parse(ev.data);
       // Tích luỹ từng bước vào m.steps để render panel "Tiến trình" (lịch sử đầy đủ, không bị delta
       // kế tiếp xoá mất). Bỏ qua bước trùng liên tiếp. Xoá placeholder "…" ban đầu — ProcessLog lo
@@ -670,38 +723,45 @@ export default function AgentConsole({ config }) {
         return { ...m, steps, status: m.status === "…" ? "" : m.status };
       });
     });
-    es.addEventListener("result", (ev) => {
+    on("result", (ev) => {
       const r = JSON.parse(ev.data);
       if (needInfoRef.current) return;
       const err = r.isError || (r.exitCode !== undefined && r.exitCode !== 0);
       if (err) { sawErrorRef.current = true; patchLast((m) => ({ ...m, status: "✗ lỗi" })); }
     });
-    es.addEventListener("error_msg", (ev) => {
+    on("error_msg", (ev) => {
       const msg = JSON.parse(ev.data);
       patchLast((m) => ({ ...m, errors: [...(m.errors || []), msg] }));
     });
     // Server đã chạy lại lượt này bằng account khác (xem retry trong lib/claude.js): bỏ phần text
     // lượt hỏng đã stream ra — thường là chính câu báo hết hạn mức của CLI, không kết thúc bằng
     // newline nên đáp án mới bị nối đuôi vào đó và mất format Markdown (bảng dính 1 dòng).
-    es.addEventListener("reset_text", () => {
+    on("reset_text", () => {
       if (flushTimerRef.current) { clearTimeout(flushTimerRef.current); flushTimerRef.current = null; }
       deltaBufRef.current = "";
       accRef.current = "";
       needInfoRef.current = false;
       patchLast((m) => (m.role === "ai" ? { ...m, text: "" } : m));
     });
-    es.addEventListener("suggest", (ev) => {
+    on("suggest", (ev) => {
       try { const arr = JSON.parse(ev.data); if (Array.isArray(arr)) setSuggests(arr); } catch {}
     });
-    es.addEventListener("end", () => { flushDelta(); setBusy(false); es.close(); esRef.current = null; finalizeSound(); patchLast((m) => (m.role === "ai" ? { ...m, endedAt: Date.now() } : m)); });
-    es.onerror = () => {
-      if (!esRef.current) return; // đã đóng bởi end/stopStream → bỏ qua
-      flushDelta();
-      esRef.current.close();
+    on("end", () => { flushDelta(); setBusy(false); es.close(); esRef.current = null; finalizeSound(); patchLast((m) => (m.role === "ai" ? { ...m, endedAt: Date.now() } : m)); });
+    // Server không còn bộ đệm để phát lại (app restart / bỏ bớt event) → lấy đáp án từ .jsonl.
+    on("gap", () => {
+      if (esRef.current !== es) return;
+      es.close();
       esRef.current = null;
-      // Chat: đừng đóng băng message. Run vẫn sống ở server → poll khôi phục rồi điền nốt đáp án
-      // (giữ log tiến trình). Job giữ hành vi cũ (báo lỗi, dừng).
-      if (!isJob && config.reconnect && !abortedRef.current) { reconnectAndReload(); return; }
+      reconnectAndReload();
+    });
+    es.onerror = () => {
+      if (esRef.current !== es) return; // đã đóng bởi end/stopStream hoặc đã thay bằng stream khác → bỏ qua
+      flushDelta();
+      es.close();
+      esRef.current = null;
+      // Chat: đừng đóng băng message. Run vẫn sống ở server → nối lại stream từ id cuối đã nhận
+      // (không được thì poll rồi điền nốt đáp án). Job giữ hành vi cũ (báo lỗi, dừng).
+      if (!isJob && config.reconnect && !abortedRef.current) { resumeStream(); return; }
       setBusy(false);
       sawErrorRef.current = true;
       finalizeSound();
