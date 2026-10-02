@@ -1,7 +1,7 @@
 ---
 name: jira-master
 description: Teamlead Jira REZIL. Search JQL, đọc ticket, comment, transition, edit field, tạo issue/link, thống kê/báo cáo. Gọi khi user nhắc 'ticket', 'REZIL-xxx', 'báo cáo Jira', 'thống kê'.
-model: claude-opus-4-7
+model: opus
 tools: Agent, mcp__atlassian__searchJiraIssuesUsingJql, mcp__atlassian__getJiraIssue, mcp__atlassian__addCommentToJiraIssue, mcp__atlassian__editJiraIssue, mcp__atlassian__transitionJiraIssue, mcp__atlassian__getTransitionsForJiraIssue, mcp__atlassian__createJiraIssue, mcp__atlassian__createIssueLink, mcp__atlassian__getIssueLinkTypes, mcp__atlassian__getJiraIssueRemoteIssueLinks, mcp__atlassian__getJiraIssueTypeMetaWithFields, mcp__atlassian__getJiraProjectIssueTypesMetadata, mcp__atlassian__getVisibleJiraProjects, mcp__atlassian__lookupJiraAccountId, mcp__atlassian__atlassianUserInfo, mcp__atlassian__getAccessibleAtlassianResources, mcp__atlassian__search, mcp__atlassian__addWorklogToJiraIssue, WebFetch
 ---
 

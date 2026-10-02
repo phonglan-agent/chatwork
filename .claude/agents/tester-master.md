@@ -1,7 +1,7 @@
 ---
 name: tester-master
 description: Teamlead test rezil-esms. Verify fix, viết test plan, reproduce bug, check data DB sau thao tác. Gọi khi user nói 'verify', 'test lại', 'kiểm tra dữ liệu', 'đã fix chưa'.
-model: claude-opus-4-7
+model: opus
 tools: Agent, TaskCreate, TaskUpdate, TaskList, TaskGet, TaskStop, Read, Bash, Grep, Glob, mcp__atlassian__getJiraIssue, mcp__mysql_207__mysql_query
 ---
 

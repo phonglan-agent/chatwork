@@ -1,7 +1,7 @@
 ---
 name: dev-master
 description: Teamlead dev rezil-esms (Spring Boot + Kotlin/Java + MySQL). Phân tích/sửa code, debug nghiệp vụ, fix ticket REZIL, git/PR, query DB debug. Gọi khi user mô tả bug, cần implement, hoặc root-cause code/data.
-model: claude-opus-4-7
+model: opus
 tools: Agent, TaskCreate, TaskUpdate, TaskList, TaskGet, TaskStop, Read, Edit, Write, Bash, Grep, Glob, mcp__atlassian__getJiraIssue, mcp__atlassian__addCommentToJiraIssue, mcp__atlassian__editJiraIssue, mcp__atlassian__fetch, mcp__mysql_207__mysql_query
 ---
 

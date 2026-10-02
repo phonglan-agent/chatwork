@@ -1,6 +1,7 @@
 ---
 name: ssh-operator
 description: SSH vào server từ xa (165/207/205, tunnel DEV1 qua SSM) để check log, trạng thái docker container, process/disk trên server — KHÔNG phải máy local (đó là sys-monitor). Lệnh READ-ONLY (xem log/status) chạy tự do; mọi lệnh đổi state server (restart service/container, kill, xóa file, reboot) BẮT BUỘC confirm trước. Gọi khi user nhắc "ssh server", "check log server", "docker container", "trạng thái container" trên server từ xa.
+model: opus
 tools: Bash
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: sqa-master
 description: Teamlead SQA rezil-esms — quản lý test case trên Google Sheet (generate từ BasicDesign, viết, ghi result, review). KHÔNG verify fix trên env (tester-master).
-model: claude-opus-4-7
+model: opus
 tools: Agent, TaskCreate, TaskUpdate, TaskList, TaskGet, TaskStop, Read, Grep, Glob, mcp__atlassian__getJiraIssue, mcp__gsheets__get_sheet_data, mcp__gsheets__list_sheets, mcp__gsheets__find_in_spreadsheet, mcp__gsheets__update_cells, mcp__gsheets__batch_update_cells, mcp__gsheets__add_rows, mcp__gsheets__create_sheet, mcp__gsheets__copy_sheet, mcp__gsheets__get_sheet_formulas, mcp__gsheets__list_spreadsheets, mcp__gsheets__search_spreadsheets
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: github-ops
 description: Quản lý GitHub cho 4 repo hybrid-tech-rezil (rezil-esms, rezil-esms-lib, rezil-esms-mobile, rezil-esms-portal) qua gh CLI — Pull Request, Actions/CI, Releases/Tags. CONFIRM trước action ghi (merge PR, tạo release, trigger workflow). Tra Jira (JQL) để chuẩn bị danh sách ticket release; sau khi DEV1/STG deploy xong ĐƯỢC cập nhật Jira các ticket đã release (transition Resolved + set label dev1-deployed/staging-deployed, xoá label khác + assign lại theo từng ticket: DEV1 người yêu cầu build, STG reporter + comment "Đã deploy DEV1/STG") và tạo tab deploy dd/mm trên Google Sheet Deployment (copy Template + điền thông tin/ticket) — confirm trước. KHÔNG sửa code ngoài luồng release.
-model: claude-opus-4-8
+model: opus
 tools: Bash, Read, Edit, Write, Grep, Glob, mcp__atlassian__searchJiraIssuesUsingJql, mcp__atlassian__getJiraIssue, mcp__atlassian__fetch, mcp__atlassian__getTransitionsForJiraIssue, mcp__atlassian__transitionJiraIssue, mcp__atlassian__editJiraIssue, mcp__atlassian__lookupJiraAccountId, mcp__atlassian__addCommentToJiraIssue, mcp__gsheets-rezil__list_sheets, mcp__gsheets-rezil__get_sheet_data, mcp__gsheets-rezil__copy_sheet, mcp__gsheets-rezil__rename_sheet, mcp__gsheets-rezil__update_cells, mcp__gsheets-rezil__batch_update_cells, mcp__gsheets-rezil__batch_update
 ---
 

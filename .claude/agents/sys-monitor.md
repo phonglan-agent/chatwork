@@ -1,7 +1,7 @@
 ---
 name: sys-monitor
 description: Agent giám sát sức khỏe MÁY LOCAL để tránh treo máy — soi CPU/RAM/swap/load, top process ngốn tài nguyên, disk đầy, IO wait, zombie/process kẹt, OOM trong log. Lệnh READ-ONLY (quan sát) chạy tự do; mọi lệnh đổi state (kill/pkill/renice/đổi config/dọn dẹp) BẮT BUỘC confirm trước. Gọi khi user nhắc "máy treo/đơ/lag", "máy chậm", "check process", "cái gì ngốn RAM/CPU", "tại sao đầy disk".
-model: claude-opus-4-8
+model: opus
 tools: Bash
 ---
 
