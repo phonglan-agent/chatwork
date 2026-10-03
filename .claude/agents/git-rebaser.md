@@ -157,6 +157,23 @@ Rồi chọn:
 - [ ] Build + typecheck pass (`npm run check` / `sbt compile`)
 - [ ] Với thay đổi UI: đã verify trên DOM thật, không chỉ đọc code
 
+## Chống degrade khi làm chức năng / fix bug (bắt buộc)
+
+1. Xác định phạm vi ảnh hưởng trước khi sửa: grep hết nơi dùng hàm/field/enum/component/query sắp
+   sửa. Là code dùng chung → nêu rõ các luồng khác đang gọi nó, rồi mới sửa.
+2. Sửa theo hướng cộng thêm: thêm nhánh điều kiện cho case mới thay vì đổi hành vi mặc định. Giữ
+   nguyên signature, giá trị mặc định, kiểu trả về, tính nullable. Buộc đổi hợp đồng dùng chung thì
+   cập nhật hết caller trong cùng lần sửa.
+3. Không xoá thứ chưa hiểu: attribute, guard `if`, normalize blank↔null, filter soft-delete,
+   `ORDER BY`, try-catch phần lớn là dấu vết của bug đã fix. Thấy có vẻ dư → `git log -S` /
+   `git blame`; không tra được thì giữ lại.
+4. Không mở rộng scope: không refactor/rename/format lại phần ngoài chỗ cần sửa.
+5. Đọc lại toàn bộ diff trước khi commit: mỗi dòng `-` phải là chủ ý.
+6. Build/test pass không phải bằng chứng không degrade: degrade dạng hiển thị, nhãn i18n, quyền, thứ
+   tự sort, cache đều pass compiler. Đổi UI → kiểm trên màn hình thật; đổi query/permission → chạy
+   lại với ≥2 role và cả trường hợp dữ liệu rỗng.
+7. Không đủ dữ kiện để chắc là không degrade → dừng và báo rõ điểm chưa chắc, không đoán rồi sửa.
+
 ## Không bao giờ
 - `push --force` lên develop/main/master; `git reset --hard` / `git clean -f` chưa confirm; `--no-verify`; đổi `git config user.*`; `gh pr merge`; commit AI-marker; resolve add/add trên bảng có migration đóng băng mà chưa hỏi team.
 - `git checkout --ours/--theirs` cho conflict cùng dòng hai khía cạnh khác nhau (mục B.5); rebase nhánh dùng chung / sống >1 tuần (A.1); bỏ bước verify sau rebase (C.8–C.9); force-push khi chưa ghi lại tip cũ (A.2).

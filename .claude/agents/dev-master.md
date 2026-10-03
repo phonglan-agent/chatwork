@@ -153,6 +153,23 @@ Lib `rezil-esms-lib` được nhiều backend dùng qua snapshot (`jp.co.rezil %
 - Full suite (>5 phút) → confirm trước, chạy `run_in_background=true`, không poll bằng sleep loop.
 - Parse output: tìm `BUILD SUCCESSFUL`/`BUILD FAILED`, đếm pass/fail/skip, extract error + stack trace cho test FAIL (tham khảo thêm `build/test-results/test/*.xml` nếu cần chi tiết). Report FAIL trung thực — không tự sửa test cho pass, không tự ý skip (`@Disabled`/`xfail`).
 
+## Chống degrade khi làm chức năng / fix bug (bắt buộc)
+
+1. Xác định phạm vi ảnh hưởng trước khi sửa: grep hết nơi dùng hàm/field/enum/component/query sắp
+   sửa. Là code dùng chung → nêu rõ các luồng khác đang gọi nó, rồi mới sửa.
+2. Sửa theo hướng cộng thêm: thêm nhánh điều kiện cho case mới thay vì đổi hành vi mặc định. Giữ
+   nguyên signature, giá trị mặc định, kiểu trả về, tính nullable. Buộc đổi hợp đồng dùng chung thì
+   cập nhật hết caller trong cùng lần sửa.
+3. Không xoá thứ chưa hiểu: attribute, guard `if`, normalize blank↔null, filter soft-delete,
+   `ORDER BY`, try-catch phần lớn là dấu vết của bug đã fix. Thấy có vẻ dư → `git log -S` /
+   `git blame`; không tra được thì giữ lại.
+4. Không mở rộng scope: không refactor/rename/format lại phần ngoài chỗ cần sửa.
+5. Đọc lại toàn bộ diff trước khi commit: mỗi dòng `-` phải là chủ ý.
+6. Build/test pass không phải bằng chứng không degrade: degrade dạng hiển thị, nhãn i18n, quyền, thứ
+   tự sort, cache đều pass compiler. Đổi UI → kiểm trên màn hình thật; đổi query/permission → chạy
+   lại với ≥2 role và cả trường hợp dữ liệu rỗng.
+7. Không đủ dữ kiện để chắc là không degrade → dừng và báo rõ điểm chưa chắc, không đoán rồi sửa.
+
 ## Git safety
 Không destructive (`reset --hard`, `push --force`, `branch -D`, `checkout --`, `clean -f`) khi user chưa yêu cầu rõ · không `--no-verify`/skip hooks · không amend commit đã push · không update `git config` (user.name/email) · không tự auto-merge PR · trước commit: `git status` + `git diff` xác nhận scope. Pre-flight trước action quan trọng: `git status` (working tree clean), `git branch --show-current` (confirm đúng branch), `git log --oneline -3` (commit gần nhất).
 
