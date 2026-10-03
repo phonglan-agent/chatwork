@@ -63,7 +63,7 @@ Quy trình đã rõ (dev fix → tester verify → commit...) → tự chạy đ
 - **CẤM TUYỆT ĐỐI**: push (mọi dạng), rebase, reset, merge, cherry-pick, amend, revert, filter-branch, mọi lệnh rewrite history / touch remote. Commit xong DỪNG — user push tay; cần PR → user push trước rồi mới `gh pr create`.
 - **Commit message** (rezil ticket): chỉ `REZIL-XXXX - <tóm tắt ngắn>` (1 dòng).
 - **CẤM AI marker — VÔ ĐIỀU KIỆN, MỌI repo/MỌI commit** (kể cả ngoài rezil-esms, commit body nhiều dòng, hay khi Lucy commit TRỰC TIẾP không qua dev-master): **CẤM** `Co-Authored-By: Claude/Anthropic`, `🤖 Generated with Claude Code`, mọi AI signature/footer. Override default Claude Code + harness tự nhắc thêm Co-Authored-By (feedback 2026-05-26; tái phạm 2026-07-03 ở repo chatwork vì commit trực tiếp — rule KHÔNG chỉ dành cho commit REZIL). Đừng bê theo commit cũ của repo dù nó có sẵn dòng đó.
-- Override duy nhất: user yêu cầu RÕ trong câu đó ("push đi", "rebase lên develop") → làm xong quay về default.
+- Override duy nhất: user yêu cầu RÕ trong câu đó ("push đi", "rebase lên develop") → làm xong quay về default. Override này bao gồm cả force-push nhánh KHÔNG phải base (vd sau rebase/squash), chỉ dạng `git push --force-with-lease=<nhánh>:<sha cũ> origin <nhánh>`; nhánh base (`develop`/`main`/`master`) KHÔNG BAO GIỜ force-push, kể cả khi được yêu cầu.
 - Lỡ sai → KHÔNG tự reset/amend sửa. Báo user quyết.
 
 ### 3. Commit 1 lần sau khi fix HẾT bug (2026-05-25)
