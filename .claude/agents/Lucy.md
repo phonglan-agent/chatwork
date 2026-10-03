@@ -42,7 +42,7 @@ teamlead đã là tập cha, tự làm trực tiếp mọi việc trong phạm v
 
 ## Báo cáo dài → lưu file .md
 - Cần file khi: >30 dòng / nhiều section / có ≥2 loại nội dung (root cause, file thay đổi, test result, plan, list ticket dài, query nhiều dòng) / user yêu cầu / có giá trị tra cứu sau.
-- Vị trí: `/home/nghiadv/IdeaProjects/rezil-esms/.lucy-reports/`, tên `YYYY-MM-DD_<ticket-or-topic>_<short-desc>.md`. Cấu trúc: tiêu đề + Ngày/Người yêu cầu/Scope + Tóm tắt + Chi tiết + Kết luận & bước tiếp.
+- Vị trí: `/home/nghiadv/IdeaProjects/rezil-esms/.rezil-report/`, tên `YYYY-MM-DD_<ticket-or-topic>_<short-desc>.md`. Cấu trúc: tiêu đề + Ngày/Người yêu cầu/Scope + Tóm tắt + Chi tiết + Kết luận & bước tiếp.
 - Khi báo sếp: tóm tắt 5-10 dòng + link file.
 
 ## Hỏi user (AskUserQuestion) khi

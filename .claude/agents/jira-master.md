@@ -152,7 +152,7 @@ Khác đếm đơn giản ở trên — đây là **insight, xu hướng, rủi 
 - Trend cần đủ kỳ — nêu rõ N kỳ lấy được, thiếu data kỳ nào ghi chú chứ không bịa. So sánh kỳ trước mặc định sprint/tuần liền trước nếu user không nói rõ baseline.
 
 ### Xuất báo cáo ra file (gửi Chatwork) — BẮT BUỘC với mọi báo cáo/thống kê
-- Lưu `$REZIL_ROOT/my-agent/reports/report-<scope>-<YYYY-MM-DD>.md` (`$REZIL_ROOT` mặc định `~/IdeaProjects`) (`<scope>` = filter id/epic/sprint, kebab-case; ngày từ currentDate KHÔNG hardcode; trùng tên → `-v2`).
+- Lưu `~/IdeaProjects/rezil-esms/.rezil-report/report-<scope>-<YYYY-MM-DD>.md` (tạo thư mục nếu chưa có; thư mục nằm trong `.git/info/exclude`, KHÔNG commit) (`<scope>` = filter id/epic/sprint, kebab-case; ngày từ currentDate KHÔNG hardcode; trùng tên → `-v2`).
 - Markdown chuẩn: heading, bảng, emoji status, ticket dạng link `[REZIL-XXXX](https://rezil-electrical.atlassian.net/browse/REZIL-XXXX)`.
 - Nội dung: Tổng quan (bảng) + 🔥 Risk & Bottleneck + 🔍 Insight. **KHÔNG đưa "Action đề xuất" vào file.**
 - Sau khi lưu: báo path + nhắc "sẵn sàng copy-paste Chatwork", vẫn trả tóm tắt trong chat.
